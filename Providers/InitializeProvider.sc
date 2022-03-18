@@ -48,9 +48,14 @@ InitializeProvider : LSPProvider {
 
 		allProviders.do {
 			|providerClass|
-			var provider;
+			var provider, clientCapability;
 
-			this.getClientCapability(clientCapabilities, providerClass.clientCapabilityName) !? {
+			// If clientCapabilityName.isNil, assume we ALWAYS use this provider
+			clientCapability = providerClass.clientCapabilityName !? {
+				this.getClientCapability(clientCapabilities, providerClass.clientCapabilityName)
+			} ?? { () };
+
+			clientCapability !? {
 				|capability|
 				Log(InitializeProvider).info("Registering provider: %", providerClass.methodNames);
 
