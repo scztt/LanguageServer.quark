@@ -27,14 +27,17 @@ TextDocumentCompletionProvider : LSPProvider {
 
 	handleRequest {
 		|method, params|
-		var doc, line, char, triggerCharacters;
+		var doc, line, character, triggerCharacters;
 
 		triggerCharacters = params["context"]["triggerCharacter"];
-		#doc, line, char = this.getDocLineChar(params);
+
+		doc = params["textDocument"];
+		line = params["position"]["line"].asInteger;
+		character = params["position"]["character"].asInteger;
 
 		LSPDatabase.getDocumentLine(doc, line) !? {
 			|lineString|
-			lineString = lineString[0..char];
+			lineString = lineString[0..character];
 			^LSPCompletionHandler.handleCompletion(lineString, triggerCharacters);
 		} ?? {
 			^nil
