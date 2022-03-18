@@ -29,7 +29,7 @@ LSPCompletionHandler {
 			LSPCompletionHandler.classMethodHandler,
 			LSPCompletionHandler.methodHandler,
 			LSPCompletionHandler.environmentVariableHandler,
-			// LSPCompletionHandler.singletonHandler,
+			LSPCompletionHandler.singletonHandler,
 			// LSPCompletionHandler.anonymousMethodHandler,
 		]);
 	}
@@ -119,8 +119,6 @@ LSPCompletionHandler {
 	validatePrefix {
 		|prefix, validateTrigger|
 		var reResult;
-
-		Log(LSPCompletionHandler).info("validatePrefix, triggers: (% != %) = %", trigger, validateTrigger, trigger != validateTrigger);
 
 		if (trigger != validateTrigger) { ^nil };
 

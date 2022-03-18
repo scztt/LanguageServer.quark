@@ -10,9 +10,11 @@
 			trigger: "(",
 			prefixHandler: {
 				|prefix|
-				var prefixClass = prefix.findRegexp("[^\\w-]([A-Z]\\w*)$");
+				var prefixClass = prefix.findRegexp("[^\\w-]*([A-Z]\\w*)$");
 
-				^if (prefixClass.notEmpty) {
+				Log(LSPCompletionHandler).info("prefix: %, prefixClass: %", prefix, prefixClass);
+
+				if (prefixClass.notEmpty) {
 					prefixClass = prefixClass[1][1];
 					if ((prefixClass = prefixClass.asSymbol.asClass).notNil and: {
 						prefixClass.isDefClass
@@ -34,10 +36,10 @@
 
 				Log(LSPCompletionHandler).info("Starting with defs: %", defNames);
 
-				defNames = defNames.select({
-					|name|
-					name.asString.beginsWith(completion)
-				});
+				// defNames = defNames.select({
+				// 	|name|
+				// 	name.asString.beginsWith(completion)
+				// });
 
 				Log(LSPCompletionHandler).info("Filtered based on % to: %", completion, defNames);
 
