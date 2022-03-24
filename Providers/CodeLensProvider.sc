@@ -19,7 +19,16 @@ CodeLensProvider : LSPProvider {
 
 	handleRequest {
 		|method, params|
-		Log(CodeLensProvider).info("Handling: %", method);
-		^nil
+		^LSPDatabase.getDocumentRegions(params["textDocument"]).collect {
+			|range|
+			(
+				range: range,
+				command: (
+					title: "▶ Evaluate",
+					command: "supercollider.executeSelection",
+					arguments: [range]
+				)
+			)
+		}
 	}
 }

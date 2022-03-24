@@ -296,6 +296,35 @@ LSPDatabase {
 			^nil
 		}
 	}
+
+	*getDocumentRegions {
+		|doc|
+		// @TODO Parse properly to account for e.g. comments...
+		var lines = doc.text.split($\n);
+		var startRe = "^\\(\\W*(\\\\.*)?$", endRe = "^\\)\\W*(\\\\.*)?$";
+		var regionStack = [], regions=[], region;
+
+		lines.do {
+			|line, lineNum|
+			if (startRe.matchRegexp(line)) {
+				regionStack = regionStack.add((
+					start: (line: lineNum, character: 0)
+				));
+			} {
+				if (endRe.matchRegexp(line)) {
+					if (regionStack.size > 0) {
+						regionStack.last.put(
+							\end,
+							(line: lineNum, character: line.size)
+						);
+						regions = regions.add(regionStack.removeAt(regionStack.size-1));
+					}
+				}
+			}
+		};
+
+		^regions
+	}
 }
 
 +String {
@@ -303,7 +332,6 @@ LSPDatabase {
 		|absoluteChar|
 		var char = 0, line = 0, lineStartChar = 0;
 		absoluteChar = min(absoluteChar, this.size);
-
 		while { char < absoluteChar } {
 			if (this[char] == Char.nl) {
 				lineStartChar = char + 1;
