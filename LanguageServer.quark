@@ -9,9 +9,9 @@
           test: "",
            url: "https://github.com/scztt/LanguageServer.quark",
   dependencies: [
-              		"Log",
-              		"UnitTest2",
-              		"Deferred"
+              		"https://github.com/scztt/Log.quark",
+              		"https://github.com/scztt/UnitTest2.quark",
+              		"https://github.com/scztt/Deferred.quark"
                 ],
   isCompatible: true ,
          since: ""
