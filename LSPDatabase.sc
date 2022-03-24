@@ -227,32 +227,39 @@ LSPDatabase {
 	}
 
 	*makeMethodCompletion {
-		|method|
+		|method, sortByClassHierarchy=false|
 		var sortText;
 
-		if (method.ownerClass.isMetaClass) {
+		if (sortByClassHierarchy && method.ownerClass.isMetaClass) {
 			sortText = (9 - method.ownerClass.superclasses.size).asString.zeroPad()
 		} {
 			sortText = "%:%".format(method.ownerClass.name, method.name)
 		};
 
 		^(
-			label: 			"% [%]".format(LSPDatabase.methodArgString(method), method.ownerClass.name),
-
-			filterText: 	method.name.asString,
-			sortText:		sortText,
-			insertText:		LSPDatabase.methodInsertString(method),
-			insertTextFormat: 2, // Snippet,
-
-			labelDetails:	LSPDatabase.methodDetails(method),
-			kind: 			2, // ??
-
-			// @TODO Add documentation and detail
-			// detail:			nil,
-			// documentation: (
-			// 	kind: 		"markdown",
-			// 	value:		LSPDatabase.methodDocumentationString(method)
-			// )
+			label: (
+				label: 				method.name.asString,
+				detail: 			LSPDatabase.methodArgString(method),
+				description: 		method.ownerClass.name.asString
+			),
+			kind: 1, 				// CompletionItemKind.Method
+			// deprecated: false,	// mark this as deprecated - no way to use this?
+			// detail:				// @TODO: additional detail
+			// documentation: 		// @TODO: method documentation
+			// detail:			    "detail", // @TODO: additional detail
+			// documentation: 	    ( // @TODO: doc string
+			// 	kind: 				"markdown",
+			// 	value: 				" *Documentation* **goes** here",
+			// 	isTrusted: 			true,
+			// 	supportThemeIcons: 	true
+			// ),
+			sortText:				sortText,
+			filterText: 			method.name.asString,
+			// preselect: 			false,
+			insertText:				LSPDatabase.methodInsertString(method),
+			insertTextFormat: 		2, // Snippet,
+			// range: (),
+			commitCharacters: 		["("]
 		)
 	}
 
