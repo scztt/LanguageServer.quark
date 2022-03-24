@@ -18,7 +18,7 @@ ExecuteProvider : LSPProvider {
 
 	handleRequest {
 		|method, params|
-		var source, document, function, result;
+		var source, document, function, result, resultStream;
 
 		source = params["sourceCode"];
 		document = params["textDocument"];
@@ -32,7 +32,9 @@ ExecuteProvider : LSPProvider {
 			result[\compileError] = "Compile error?"
 		} {
 			try {
-				result[\result] = function.value();
+				resultStream = CollStream("");
+				function.value().printOn(resultStream);
+				result[\result] = resultStream.collection;
 			} {
 				|error|
 				result[\error] = error.errorString;
