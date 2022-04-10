@@ -5,6 +5,7 @@ LSPConnection {
 
 	var <>inPort, <>outPort;
 	var socket;
+	var messageLengthExpected, messageBuffer;
 
 	*initClass {
 		var settings;
@@ -73,7 +74,7 @@ LSPConnection {
 		Log(LSPConnection).info("Starting language server, inPort: % outPort:%", inPort, outPort);
 
 		socket = NetAddr("127.0.0.1", outPort);
-		thisProcess.openTCPPort(inPort);
+		thisProcess.openUDPPort(inPort, \raw);
 
 		thisProcess.recvRawfunc = {
 			|time, replyAddr, msg|
@@ -119,24 +120,43 @@ LSPConnection {
 
 		Log(LSPConnection).info("Message received: %, %, %", time, replyAddr, message);
 
-		this.prHandleMessage(
-			this.prParseMessage(message)
-		)
+		this.prParseMessage(message) !? this.prHandleMessage(_)
 	}
 
 	prParseMessage {
 		|message|
-		var object;
+		var object, found, endOfHeader;
 
-		try {
-			object = message.parseJSON;
-		} {
-			|e|
-			// @TODO: Improve error messaging and behavior.
-			"Problem parsing message (%)".format(e).error;
+		messageBuffer = messageBuffer ++ message;
+
+		if (messageLengthExpected.isNil) {
+			found = messageBuffer.findRegexp("Content-Length: ([0-9]+)\r\n\r(\n)");
+			if (found.size > 0) {
+				messageLengthExpected = found[1][1].asInteger;
+				endOfHeader = found[2][0] + 1;
+				messageBuffer = messageBuffer[endOfHeader..];
+			}
 		};
 
-		^object
+		if (messageLengthExpected.notNil and: {
+			messageLengthExpected <= messageBuffer.size
+		}) {
+			"Finally processing message: %".format(messageBuffer[0..(messageLengthExpected-1)]);
+			try {
+				object = messageBuffer[0..(messageLengthExpected-1)].parseJSON;
+				messageBuffer = messageBuffer[messageLengthExpected..];
+				messageLengthExpected = nil;
+			} {
+				|e|
+				// @TODO: Improve error messaging and behavior.
+				"Problem parsing message (%)".format(e).error;
+			};
+
+			^object
+		} {
+			messageBuffer = messageBuffer ++ message
+			^nil
+		}
 	}
 
 	prEncodeMessage {
@@ -174,7 +194,7 @@ LSPConnection {
 			preprocessor.value(params);
 
 			Deferred().using({
-				provider.handleRequest(method, params).postln;
+				provider.handleRequest(method, params);
 			}).then({
 				|result|
 
@@ -207,7 +227,10 @@ LSPConnection {
 
 	prSendMessage {
 		|message|
-		// @TODO message should use JSON-RPC Content-Length header, support multi-part sending for long messages.
+		message = "Content-Length: %\r\n\r\n%\n".format(
+			message.size + 1,
+			message
+		);
 		socket.sendRaw(message);
 	}
 }
