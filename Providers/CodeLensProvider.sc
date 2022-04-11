@@ -26,7 +26,7 @@ CodeLensProvider : LSPProvider {
 			(
 				range: range,
 				command: (
-					title: "▶ Evaluate",
+					title: "▶ Evaluate block",
 					command: "supercollider.executeSelection",
 					arguments: [range]
 				)
