@@ -5,6 +5,7 @@
 
 LSPDatabase {
 	classvar allMethodNames, allMethods, allMethodsByName, methodLocations;
+	classvar classSymbols, methodSymbols, allSymbolObjects;
 
 	*initClass {
 		methodLocations = ();
@@ -93,6 +94,10 @@ LSPDatabase {
 		^allMethodNames;
 	}
 
+	*allClasses {
+		^Class.allClasses
+	}
+
 	*allMethods {
 		if (allMethods.notNil) { ^allMethods };
 
@@ -172,18 +177,18 @@ LSPDatabase {
 		var methods;
 
 		if (word.isClassName) {
-			^[this.makeClassDefinition(word.asClass)]
+			^[this.renderClassLocation(word.asClass)]
 		} {
 			methods = this.methodsForName(word);
 
 			^methods.collect {
 				|method|
-				this.makeMethodDefinition(method)
+				this.renderMethodLocation(method)
 			}
 		}
 	}
 
-	*makeMethodRange {
+	*renderMethodRange {
 		|method|
 		var file = File(method.filenameSymbol.asString, "r");
 		var methodFileSource = file.readAllString();
@@ -203,25 +208,25 @@ LSPDatabase {
 		)
 	}
 
-	*makeClassRange {
+	*renderClassRange {
 		|class|
 		// Lucky us, these implementations are identical for now.
-		^this.makeMethodRange(class)
+		^this.renderMethodRange(class)
 	}
 
-	*makeMethodDefinition {
+	*renderMethodLocation {
 		|method|
 		^(
 			uri: "file://%".format(method.filenameSymbol),
-			range: this.makeMethodRange(method)
+			range: this.renderMethodRange(method)
 		)
 	}
 
-	*makeClassDefinition {
+	*renderClassLocation {
 		|class|
 		^(
 			uri: "file://%".format(class.filenameSymbol),
-			range: this.makeClassRange(class)
+			range: this.renderClassRange(class)
 		)
 	}
 
@@ -301,8 +306,8 @@ LSPDatabase {
 	*getDocumentRegions {
 		|doc|
 		// @TODO Parse properly to account for e.g. comments...
-		var lines = doc.text.split($\n);
-		var startRe = "^\\(\\W*(\\\\.*)?$", endRe = "^\\)\\W*(\\\\.*)?$";
+		var lines = doc.string.split($\n);
+		var startRe = "^\\(\\W*(\\\\.*)?$", endRe = "^\\)\\s*(//.*)?$";
 		var regionStack = [], regions=[], region;
 
 		lines.do {
@@ -325,6 +330,94 @@ LSPDatabase {
 		};
 
 		^regions
+	}
+
+	*renderClassWorkspaceSymbol {
+		|class|
+		^(
+			name: 		class.name,
+			kind: 		5, // class
+			location: 	this.renderClassLocation(class)
+		)
+	}
+
+	*renderMethodWorkspaceSymbol {
+		|method|
+		^(
+			name: 		method.name,
+			kind: 		6, // method
+			location: 	this.renderMethodLocation(method),
+			containerName: method.ownerClass.name
+		)
+	}
+
+	*renderSymbolObject {
+		|obj|
+		if (obj.isKindOf(Method)) {
+			^LSPDatabase.renderMethodWorkspaceSymbol(obj)
+		} {
+			^LSPDatabase.renderClassWorkspaceSymbol(obj)
+		}
+	}
+
+	*allSymbolObjects {
+		^allSymbolObjects ?? {
+			allSymbolObjects = LSPDatabase.allMethods ++ LSPDatabase.allClasses;
+			allSymbolObjects = allSymbolObjects.collect {
+				|o|
+				[o.name.asString.toLower, o]
+			};
+
+			allSymbolObjects.sort {
+				|a, b|
+				a[0] < b[0]
+			};
+
+			allSymbolObjects = allSymbolObjects.collect(_[1]);
+		}
+	}
+
+	*findSymbols {
+		|query, limit=20|
+		var symbolObjects = LSPDatabase.allSymbolObjects;
+		var result = Array(limit);
+		var index;
+
+		index = LSPDatabase.findSymbolStartIndex(query, symbolObjects);
+		limit = index + limit;
+
+		query = query.toLower;
+		while { index < limit and: { symbolObjects[index].name.asString.toLower.beginsWith(query) }} {
+			result = result.add(symbolObjects[index]);
+			index = index + 1;
+		};
+
+		^result.collect {
+			|symbolObj|
+			LSPDatabase.renderSymbolObject(symbolObj)
+		}
+	}
+
+	*findSymbolStartIndex {
+		|query, all|
+		var index;
+		var low = 0;
+		var high = all.size-1;
+
+		query = query.toLower;
+
+		while {
+			index = high + low div: 2;
+			low <= high;
+		} {
+			if (all[index].name.asString.toLower < query) {
+				low = index + 1;
+			} {
+				high = index - 1;
+			};
+		};
+
+		^low
 	}
 }
 
