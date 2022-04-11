@@ -154,7 +154,8 @@ LSPDatabase {
 
 	*methodInsertString {
 		|method|
-		^"%(%${0})".format(			method.name,
+		^"%(%${0})".format(
+			method.name,
 			(method.argNames !? _[1..] ?? []).collect({
 				|a, i|
 				"${%:%}".format(i+1, a)
@@ -332,6 +333,7 @@ LSPDatabase {
 		|absoluteChar|
 		var char = 0, line = 0, lineStartChar = 0;
 		absoluteChar = min(absoluteChar, this.size);
+
 		while { char < absoluteChar } {
 			if (this[char] == Char.nl) {
 				lineStartChar = char + 1;
@@ -343,3 +345,4 @@ LSPDatabase {
 		^[line, char - lineStartChar]
 	}
 }
+
