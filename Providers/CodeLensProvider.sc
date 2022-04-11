@@ -20,7 +20,6 @@ CodeLensProvider : LSPProvider {
 	handleRequest {
 		|method, params|
 		var doc = LSPDocument.findByQUuid(params["textDocument"]["uri"]);
-		doc.string.postln;
 		^LSPDatabase.getDocumentRegions(doc).collect {
 			|range|
 			(
