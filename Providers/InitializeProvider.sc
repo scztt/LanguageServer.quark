@@ -7,7 +7,6 @@ InitializeProvider : LSPProvider {
 	*serverCapabilityName { ^nil }
 
 	init {
-		Log('LanguageServer.quark').level = \debug;
 	}
 
 	options {

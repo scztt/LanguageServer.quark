@@ -194,9 +194,22 @@ LSPConnection {
 			}, {
 				|error|
 				// @TODO handle error
-				error.reportError
+				error.reportError;
+				this.prHandleErrorResponse(id, error.what);
 			});
 		}
+	}
+
+	prHandleErrorResponse {
+		|id, error|
+		var message = (
+			id: id,
+			error: error
+		).toJSON;
+
+		Log('LanguageServer.quark').info("Responding to id: % with: %", id, message);
+
+		this.prSendMessage(message);
 	}
 
 	prHandleResponse {
