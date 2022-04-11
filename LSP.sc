@@ -181,7 +181,7 @@ LSPConnection {
 
 			Deferred().using({
 				provider.handleRequest(method, params);
-			}).then({
+			}, AppClock).then({
 				|result|
 
 				if (result == provider) {
