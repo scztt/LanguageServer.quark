@@ -21,18 +21,6 @@ LSPConnection {
 		preprocessor = {
 			|params|
 
-			params["textDocument"] !? {
-				|doc|
-				if (doc["text"].notNil) {
-					params["textDocument"] = LSPDocument.syncFromIDE(
-						doc["uri"],
-						doc["text"]
-					);
-				} {
-					params["textDocument"] = LSPDocument.findByQUuid(doc["uri"])
-				}
-			};
-
 			params["params"] !? _["position"] !? {
 				|position|
 				position["line"] = position["line"].asInteger;

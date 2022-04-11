@@ -20,8 +20,9 @@ GotoDeclarationProvider : LSPProvider {
 
 	handleRequest {
 		|method, params|
+		var doc = LSPDocument.findByQUuid(params["textDocument"]["uid"]);
 		var wordAtCursor = LSPDatabase.getDocumentWordAt(
-			params["textDocument"],
+			doc,
 			params["position"]["line"],
 			params["position"]["character"]
 		);
