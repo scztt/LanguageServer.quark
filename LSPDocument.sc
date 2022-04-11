@@ -220,6 +220,17 @@ LSPDocument {
 		this.changed(\string, this.string);
 	}
 
+	initFromDisk {
+		Log('LanguageServer.quark').info("Loading LSP document from disk % [size=%]", quuid);
+
+		title = this.path !? { |p| PathName(p).fileNameWithoutExtension } ?? { "unknown" };
+		isEdited = false;
+
+		// languageId = "";
+		version = 0;
+		string = File.readAllString(this.path);
+	}
+
 	applyChange {
 		|newVersion, change|
 		var start, end;
@@ -480,6 +491,9 @@ LSPDocument {
 	}
 
 	string { | rangestart, rangesize = 1 |
+		if (string.isNil) {
+			this.initFromDisk();
+		};
 		if(rangestart.isNil,{
 			^string;
 		});
