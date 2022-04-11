@@ -58,7 +58,6 @@ LSPConnection {
 
 	start {
 		// @TODO: What do we do before start / after stop? Errors?
-		Log('LanguageServer.quark').level = \debug;
 		Log('LanguageServer.quark').info("Starting language server, inPort: % outPort:%", inPort, outPort);
 
 		socket = NetAddr("127.0.0.1", outPort);
@@ -129,7 +128,6 @@ LSPConnection {
 		if (messageLengthExpected.notNil and: {
 			messageLengthExpected <= messageBuffer.size
 		}) {
-			"Finally processing message: %".format(messageBuffer[0..(messageLengthExpected-1)]);
 			try {
 				object = messageBuffer[0..(messageLengthExpected-1)].parseJSON;
 				messageBuffer = messageBuffer[messageLengthExpected..];
