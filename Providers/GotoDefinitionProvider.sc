@@ -18,7 +18,7 @@ GotoDefinitionProvider : LSPProvider {
 
 	handleRequest {
 		|method, params|
-		var doc = LSPDocument.findByQUuid(params["textDocument"]["uid"]);
+		var doc = LSPDocument.findByQUuid(params["textDocument"]["uri"]);
 		var wordAtCursor = LSPDatabase.getDocumentWordAt(
 			doc,
 			params["position"]["line"].asInteger,

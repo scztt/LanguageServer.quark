@@ -29,7 +29,7 @@ TextDocumentCompletionProvider : LSPProvider {
 		|method, params|
 		var doc, line, character, triggerCharacters;
 
-		doc = LSPDocument.findByQUuid(params["textDocument"]["uid"]);
+		doc = LSPDocument.findByQUuid(params["textDocument"]["uri"]);
 		triggerCharacters = params["context"]["triggerCharacter"];
 
 		line = params["position"]["line"].asInteger;

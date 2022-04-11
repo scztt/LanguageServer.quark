@@ -21,7 +21,7 @@ ExecuteProvider : LSPProvider {
 		var source, document, function, result, resultStream;
 
 		source = params["sourceCode"];
-		document = LSPDocument.findByQUuid(params["textDocument"]["uid"]);
+		document = LSPDocument.findByQUuid(params["textDocument"]["uri"]);
 
 		thisProcess.nowExecutingPath = document.path;
 
