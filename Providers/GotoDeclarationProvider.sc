@@ -27,7 +27,7 @@ GotoDeclarationProvider : LSPProvider {
 			params["position"]["character"]
 		);
 
-		Log(GotoDeclarationProvider).info("Found word at cursor: %", wordAtCursor);
+		Log('LanguageServer.quark').info("Found word at cursor: %", wordAtCursor);
 
 		^nil
 	}

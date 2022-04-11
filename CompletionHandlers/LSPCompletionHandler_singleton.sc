@@ -12,7 +12,7 @@
 				|prefix|
 				var prefixClass = prefix.findRegexp("[^\\w-]*([A-Z]\\w*)$");
 
-				Log(LSPCompletionHandler).info("prefix: %, prefixClass: %", prefix, prefixClass);
+				Log('LanguageServer.quark').info("prefix: %, prefixClass: %", prefix, prefixClass);
 
 				if (prefixClass.notEmpty) {
 					prefixClass = prefixClass[1][1];
@@ -34,14 +34,14 @@
 				defNames = prefixClass.prGetNames.asArray.sort;
 				defNames = defNames.collect({ |name| "\\" ++ name.asString });
 
-				Log(LSPCompletionHandler).info("Starting with defs: %", defNames);
+				Log('LanguageServer.quark').info("Starting with defs: %", defNames);
 
 				// defNames = defNames.select({
 				// 	|name|
 				// 	name.asString.beginsWith(completion)
 				// });
 
-				Log(LSPCompletionHandler).info("Filtered based on % to: %", completion, defNames);
+				Log('LanguageServer.quark').info("Filtered based on % to: %", completion, defNames);
 
 				results = defNames.collectAs({
 					|name|

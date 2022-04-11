@@ -19,7 +19,7 @@ CodeActionProvider : LSPProvider {
 
 	handleRequest {
 		|method, params|
-		Log(CodeActionProvider).info("Handling: %", method);
+		Log('LanguageServer.quark').info("Handling: %", method);
 		^nil
 	}
 }

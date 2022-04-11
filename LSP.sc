@@ -58,8 +58,8 @@ LSPConnection {
 
 	start {
 		// @TODO: What do we do before start / after stop? Errors?
-		Log(LSPConnection).level = \debug;
-		Log(LSPConnection).info("Starting language server, inPort: % outPort:%", inPort, outPort);
+		Log('LanguageServer.quark').level = \debug;
+		Log('LanguageServer.quark').info("Starting language server, inPort: % outPort:%", inPort, outPort);
 
 		socket = NetAddr("127.0.0.1", outPort);
 		thisProcess.openUDPPort(inPort, \raw);
@@ -94,9 +94,9 @@ LSPConnection {
 			methodName = methodName.asSymbol;
 
 			if (providers[methodName].isNil) {
-				Log(LSPConnection).info("Adding provider for method '%'", methodName);
+				Log('LanguageServer.quark').info("Adding provider for method '%'", methodName);
 			} {
-				Log(LSPConnection).warning("Overwriting provider for method '%'", methodName);
+				Log('LanguageServer.quark').warning("Overwriting provider for method '%'", methodName);
 			};
 
 			providers[methodName] = provider;
@@ -106,7 +106,7 @@ LSPConnection {
 	prOnReceived {
 		|time, replyAddr, message|
 
-		Log(LSPConnection).info("Message received: %, %, %", time, replyAddr, message);
+		Log('LanguageServer.quark').info("Message received: %, %, %", time, replyAddr, message);
 
 		this.prParseMessage(message) !? this.prHandleMessage(_)
 	}
@@ -174,9 +174,9 @@ LSPConnection {
 		provider = providers[method];
 
 		if (provider.isNil) {
-			Log(LSPConnection).info("No provider found for method: %", method)
+			Log('LanguageServer.quark').info("No provider found for method: %", method)
 		} {
-			Log(LSPConnection).info("Found method provider: %", provider);
+			Log('LanguageServer.quark').info("Found method provider: %", provider);
 
 			// Preprocess param values into a usable state
 			preprocessor.value(params);
@@ -208,7 +208,7 @@ LSPConnection {
 			result: result
 		).toJSON;
 
-		Log(LSPConnection).info("Responding to id: % with: %", id, message);
+		Log('LanguageServer.quark').info("Responding to id: % with: %", id, message);
 
 		this.prSendMessage(message);
 	}

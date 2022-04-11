@@ -27,7 +27,7 @@
 				// @TODO should just return methods themselves, not indexes?
 				methodIndexRange = LSPDatabase.matchMethods(completion);
 
-				Log(LSPCompletionHandler).info("Found % completions, returning %", methodIndexRange.size, min(100, methodIndexRange.size));
+				Log('LanguageServer.quark').info("Found % completions, returning %", methodIndexRange.size, min(100, methodIndexRange.size));
 
 				// @TODO Make 100 into a "maxCompletions" option somewhere?
 				isIncomplete = (methodIndexRange.size > 100);

@@ -99,7 +99,7 @@ LSPCompletionHandler {
 			triggerCharacters
 		);
 
-		Log(LSPCompletionHandler).info("Doing completion on: % / % / %", prefix, trigger, completion);
+		Log('LanguageServer.quark').info("Doing completion on: % / % / %", prefix, trigger, completion);
 
 		// Find the first handler for which prValidateHandler returns non-nil.
 		handler = completionHandlers.detect({
@@ -108,10 +108,10 @@ LSPCompletionHandler {
 		});
 
 		if (handler.notNil) {
-			Log(LSPCompletionHandler).info("Using handler: %", handler.name);
+			Log('LanguageServer.quark').info("Using handler: %", handler.name);
 			^handler.handle(validatedPrefix, trigger, completion);
 		} {
-			Log(LSPCompletionHandler).info("No handler for completion: % / % / %", prefix, trigger, completion);
+			Log('LanguageServer.quark').info("No handler for completion: % / % / %", prefix, trigger, completion);
 			^nil
 		}
 	}

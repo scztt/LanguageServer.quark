@@ -6,7 +6,9 @@ InitializeProvider : LSPProvider {
 	*clientCapabilityName { ^nil }
 	*serverCapabilityName { ^nil }
 
-	init {}
+	init {
+		Log('LanguageServer.quark').level = \debug;
+	}
 
 	options {
 		// https://microsoft.github.io/language-server-protocol/specifications/specification-3-17/#clientCapabilities
@@ -32,7 +34,7 @@ InitializeProvider : LSPProvider {
 
 		serverCapabilities = ();
 		this.addProviders(initializeParams["capabilities"], serverCapabilities);
-		Log(InitializeProvider).info("Server capabilities are: %", serverCapabilities);
+		Log('LanguageServer.quark').info("Server capabilities are: %", serverCapabilities);
 
 		^(
 			"serverInfo": server.serverInfo,
@@ -44,7 +46,7 @@ InitializeProvider : LSPProvider {
 		|clientCapabilities, serverCapabilities, pathRoot=([])|
 		var allProviders = LSPProvider.all;
 
-		Log(InitializeProvider).info("Found providers: %", allProviders.collect(_.methodNames).join(", "));
+		Log('LanguageServer.quark').info("Found providers: %", allProviders.collect(_.methodNames).join(", "));
 
 		allProviders.do {
 			|providerClass|
@@ -57,7 +59,7 @@ InitializeProvider : LSPProvider {
 
 			clientCapability !? {
 				|capability|
-				Log(InitializeProvider).info("Registering provider: %", providerClass.methodNames);
+				Log('LanguageServer.quark').info("Registering provider: %", providerClass.methodNames);
 
 				provider = providerClass.new(server, capability);
 
@@ -74,7 +76,7 @@ InitializeProvider : LSPProvider {
 
 	getClientCapability {
 		|clientCapabilities, path|
-		Log(InitializeProvider).info("Checking for client capability at % (clientCapabilities: %)", path, clientCapabilities);
+		Log('LanguageServer.quark').info("Checking for client capability at % (clientCapabilities: %)", path, clientCapabilities);
 
 		if (path.isNil) { ^() };
 
@@ -92,7 +94,7 @@ InitializeProvider : LSPProvider {
 
 	addServerCapability {
 		|serverCapabilities, path, options|
-		Log(InitializeProvider).info("Adding server capability at %: %", path, options);
+		Log('LanguageServer.quark').info("Adding server capability at %: %", path, options);
 
 		if (path.isNil) { ^this };
 
@@ -102,13 +104,13 @@ InitializeProvider : LSPProvider {
 			if (path.size > 1) {
 				path[0..(path.size-2)].do {
 					|key|
-					Log(InitializeProvider).info("looking up key %", key);
+					Log('LanguageServer.quark').info("looking up key %", key);
 					serverCapabilities[key] = serverCapabilities[key] ?? { () };
 					serverCapabilities = serverCapabilities[key];
 				};
 			};
 
-			Log(InitializeProvider).info("writing options into key %", path.last);
+			Log('LanguageServer.quark').info("writing options into key %", path.last);
 			serverCapabilities[path.last] = options;
 		}
 	}

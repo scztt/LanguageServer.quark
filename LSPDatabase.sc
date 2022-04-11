@@ -281,7 +281,7 @@ LSPDatabase {
 		var start = character;
 		var word;
 
-		Log(LSPDatabase).info("Searching line for a word: '%' at %:%", lineString, line, character);
+		Log('LanguageServer.quark').info("Searching line for a word: '%' at %:%", lineString, line, character);
 
 		while {
 			(start >= 0) and: { (lineString[start].isAlphaNum or: { lineString[start] == $_ }) }

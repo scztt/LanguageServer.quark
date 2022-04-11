@@ -21,7 +21,7 @@ SignatureHelpProvider : LSPProvider {
 
 	handleRequest {
 		|method, params|
-		Log(SignatureHelpProvider).info("Handling: %", method);
+		Log('LanguageServer.quark').info("Handling: %", method);
 
 		^nil;
 	}

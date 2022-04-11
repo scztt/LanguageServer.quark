@@ -18,7 +18,7 @@ FindReferencesProvider : LSPProvider {
 
 	handleRequest {
 		|method, params|
-		Log(FindReferencesProvider).info("Handling: %", method);
+		Log('LanguageServer.quark').info("Handling: %", method);
 
 		^nil
 	}

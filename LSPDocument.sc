@@ -208,7 +208,7 @@ LSPDocument {
 
 	initFromLSP {
 		|inLanguageId, inVersion, inText|
-		Log(LSPDocument).info("Creating LSP document % [size=%]", quuid, inText.size);
+		Log('LanguageServer.quark').info("Creating LSP document % [size=%]", quuid, inText.size);
 
 		title = this.path !? { |p| PathName(p).fileNameWithoutExtension } ?? { "unknown" };
 		isEdited = false;
@@ -251,7 +251,7 @@ LSPDocument {
 	}
 
 	initFromIDE {|id, argtitle, argstring, argisEdited, argPath, selStart, selSize|
-		Log(LSPDocument).info("Syncing document % to size=%", id, argstring.size);
+		Log('LanguageServer.quark').info("Syncing document % to size=%", id, argstring.size);
 
 		quuid = id;
 		title = argtitle;

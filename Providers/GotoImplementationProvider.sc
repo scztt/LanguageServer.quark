@@ -18,7 +18,7 @@ GotoImplementationProvider : LSPProvider {
 
 	handleRequest {
 		|method, params|
-		Log(GotoImplementationProvider).info("Handling: %", method);
+		Log('LanguageServer.quark').info("Handling: %", method);
 
 		^nil;
 	}

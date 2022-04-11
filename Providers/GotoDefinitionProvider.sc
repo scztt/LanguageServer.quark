@@ -25,7 +25,7 @@ GotoDefinitionProvider : LSPProvider {
 			params["position"]["character"].asInteger
 		);
 
-		Log(GotoDefinitionProvider).info("Found word at cursor: %", wordAtCursor);
+		Log('LanguageServer.quark').info("Found word at cursor: %", wordAtCursor);
 
 		^(wordAtCursor !? { this.getDefinitionsForWord(wordAtCursor) })
 	}

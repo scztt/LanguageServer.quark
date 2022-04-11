@@ -12,7 +12,7 @@ TextDocumentProvider : LSPProvider {
 	*serverCapabilityName { ^"textDocumentSync" }
 
 	init {
-		Log(TextDocumentProvider).level = \info;
+		Log('LanguageServer.quark').level = \info;
 	}
 
 	options {
@@ -26,7 +26,7 @@ TextDocumentProvider : LSPProvider {
 
 	handleRequest {
 		|method, params|
-		Log(TextDocumentProvider).info("Handling: %", method);
+		Log('LanguageServer.quark').info("Handling: %", method);
 
 		switch(
 			method,

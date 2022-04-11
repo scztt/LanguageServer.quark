@@ -33,7 +33,7 @@
 				// short-ish and we can cache our response for future uses if needed.
 				#methodNames, methods = LSPDatabase.methodsForClass(prefixClass);
 
-				Log(LSPCompletionHandler).info("Found % method completions", methods.size);
+				Log('LanguageServer.quark').info("Found % method completions", methods.size);
 
 				// @TODO Remove once we fix RPC content-size stuff - without this, we often
 				// have too many methods and our response will fail.

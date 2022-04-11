@@ -1,4 +1,4 @@
-Log(LSPCompletionHandler).level = \debug;
+Log('LanguageServer.quark').level = \debug;
 UnitTest2("methodHandler", {
 	|test|
 	var handler = LSPCompletionHandler.methodHandler;
