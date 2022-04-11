@@ -1,12 +1,12 @@
 // https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_implementation
-ExecuteProvider : LSPProvider {
+EvaluateProvider : LSPProvider {
 	*methodNames {
 		^[
-			"textDocument/executeSelection",
+			"textDocument/evaluateSelection",
 		]
 	}
-	*clientCapabilityName { ^"textDocument.execution" }
-	*serverCapabilityName { ^"executionProvider" }
+	*clientCapabilityName { ^"textDocument.evaluation" }
+	*serverCapabilityName { ^"evaluationProvider" }
 
 	init {
 		|clientCapabilities|
