@@ -4,7 +4,7 @@
 // for caching.
 
 LSPDatabase {
-	classvar allMethodNames, allMethods, allMethodsByName, methodLocations;
+	classvar allMethodNames, allMethods, allClasses, allMethodsByName, methodLocations;
 	classvar classSymbols, methodSymbols, allSymbolObjects;
 
 	*initClass {
@@ -95,7 +95,9 @@ LSPDatabase {
 	}
 
 	*allClasses {
-		^Class.allClasses
+		^allClasses ?? {
+			allClasses = Class.allClasses.sort({ |a, b| a.name.asString.toLower < b.name.asString.toLower })
+		}
 	}
 
 	*allMethods {
@@ -360,6 +362,32 @@ LSPDatabase {
 		}
 	}
 
+	*renderClassNameCompletion {
+		|class|
+		var name = class.name.asString;
+		^(
+			label: (
+				label: 				name,
+			),
+			kind: 7, 				// CompletionItemKind.Class
+			// deprecated: false,	// mark this as deprecated - no way to use this?
+			// detail:				// @TODO: additional detail
+			// documentation: 		// @TODO: method documentation
+			// detail:			    "detail", // @TODO: additional detail
+			// documentation: 	    ( // @TODO: doc string
+			// 	kind: 				"markdown",
+			// 	value: 				" *Documentation* **goes** here",
+			// 	isTrusted: 			true,
+			// 	supportThemeIcons: 	true
+			// ),
+			sortText:				name,
+			filterText: 			name,
+			// preselect: 			false,
+			insertText:				name,
+			insertTextFormat: 		2, // Snippet,
+		)
+	}
+
 	*allSymbolObjects {
 		^allSymbolObjects ?? {
 			allSymbolObjects = LSPDatabase.allMethods ++ LSPDatabase.allClasses;
@@ -374,6 +402,28 @@ LSPDatabase {
 			};
 
 			allSymbolObjects = allSymbolObjects.collect(_[1]);
+		}
+	}
+
+	*findClasses {
+		|query, limit=20|
+		var symbolObjects = LSPDatabase.allClasses;
+		var result = Array(limit);
+		var index;
+
+		index = LSPDatabase.findSymbolStartIndex(query, symbolObjects);
+		limit = index + limit;
+
+		"start index: %".format(index).postln;
+
+		while { index < limit and: { symbolObjects[index].name.asString.beginsWith(query) }} {
+			result = result.add(symbolObjects[index].postln);
+			index = index + 1;
+		};
+
+		^result.collect {
+			|symbolObj|
+			LSPDatabase.renderClassNameCompletion(symbolObj)
 		}
 	}
 
@@ -410,7 +460,7 @@ LSPDatabase {
 			index = high + low div: 2;
 			low <= high;
 		} {
-			if (all[index].name.asString.toLower < query) {
+			if (all[index].name.asString.toLower.postln < query.postln) {
 				low = index + 1;
 			} {
 				high = index - 1;

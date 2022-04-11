@@ -30,6 +30,7 @@ LSPCompletionHandler {
 			LSPCompletionHandler.methodHandler,
 			LSPCompletionHandler.environmentVariableHandler,
 			LSPCompletionHandler.singletonHandler,
+			LSPCompletionHandler.classNameHandler
 			// LSPCompletionHandler.anonymousMethodHandler,
 		]);
 	}
@@ -44,6 +45,13 @@ LSPCompletionHandler {
 		|lineString, triggerCharacters|
 		var prefix, completion, completionTrigger;
 		var char = lineString.size - 1;
+		var classnameRegex = "^.*\\W([A-Z][A-Za-z0-9_]*)$";
+		var classnameMatch;
+
+		classnameMatch = lineString.findRegexp(classnameRegex);
+		if (classnameMatch.size > 0) {
+			^["", "", classnameMatch[1][1]]
+		};
 
 		while {
 			(char >= 0) and: { triggerCharacters.includes(lineString[char]).not }} {
@@ -104,7 +112,7 @@ LSPCompletionHandler {
 		// Find the first handler for which prValidateHandler returns non-nil.
 		handler = completionHandlers.detect({
 			|handler|
-			(validatedPrefix = handler.validatePrefix(prefix, trigger)).postln.notNil
+			(validatedPrefix = handler.validatePrefix(prefix, trigger)).notNil
 		});
 
 		if (handler.notNil) {
