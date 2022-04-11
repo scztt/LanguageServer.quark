@@ -32,11 +32,15 @@ LSPDocument {
 	classvar <>autoRun = true;
 	classvar <asyncActions;
 
-	var <>quuid, <title, <isEdited = false, <path;
+	// Primary LSP properties
+	var <>quuid, <>languageId, <version;
+
+	// derived properties
+	var <title, <isEdited = false;
+	var string, <isOpen = false;
+
 	var <keyDownAction, <keyUpAction, <mouseUpAction, <mouseDownAction;
 	var <>toFrontAction, <>endFrontAction, <>onClose, <textChangedAction;
-
-	var string;
 
 	var <envir, <savedEnvir;
 	var <editable = true, <promptToSave = true;
@@ -194,11 +198,56 @@ LSPDocument {
 		// ScIDE.setCurrentDocumentByQUuid(quuid);
 	}
 
-	init {|id, argtitle, argstring, argisEdited|
-		// quuid = id;
-		// title = argtitle;
-		// this.text = argstring;
-		// isEdited = argisEdited;
+	path {
+		if (quuid.contains("file://")) {
+			^quuid.copy.replace("file://", "")
+		} {
+			^nil
+		}
+	}
+
+	initFromLSP {
+		|inLanguageId, inVersion, inText|
+		Log(LSPDocument).info("Creating LSP document % [size=%]", quuid, inText.size);
+
+		title = this.path !? { |p| PathName(p).fileNameWithoutExtension } ?? { "unknown" };
+		isEdited = false;
+
+		languageId = languageId;
+		version = inVersion;
+		string = inText;
+
+		this.changed(\string, this.string);
+	}
+
+	applyChange {
+		|newVersion, change|
+		var start, end;
+
+		version = newVersion;
+
+		if (change.isWholeDocument) {
+			string = change.text
+		} {
+			#start, end = change.stringIndices(string);
+			string = string.copyRange(0, start-1) ++ change.text ++ string.copyRange(end, string.size)
+		};
+
+		isEdited = true;
+
+		this.changed(\string, this.string);
+	}
+
+	documentWasSaved {
+		isEdited = false;
+	}
+
+	isOpen_{
+		|open|
+		if (isOpen != open) {
+			isOpen = open;
+			this.changed(\isOpen, isOpen)
+		}
 	}
 
 	initFromIDE {|id, argtitle, argstring, argisEdited, argPath, selStart, selSize|
@@ -208,9 +257,6 @@ LSPDocument {
 		title = argtitle;
 		string = argstring;
 		isEdited = argisEdited;
-		path = argPath;
-		// this.prSetTextMirror(id, argstring, 0, -1);
-		// this.prSetSelectionMirror(id, selStart, selSize);
 	}
 
 	initFromPath { | argpath, selectionStart, selectionLength |
@@ -434,10 +480,10 @@ LSPDocument {
 	}
 
 	string { | rangestart, rangesize = 1 |
-		// if(rangestart.isNil,{
-		// 	^this.string;
-		// });
-		// ^this.rangeText(rangestart, rangesize);
+		if(rangestart.isNil,{
+			^string;
+		});
+		^this.rangeText(rangestart, rangesize);
 	}
 
 	string_ { | string, rangestart = -1, rangesize = 1 |
@@ -589,4 +635,49 @@ LSPDocument {
 
 	// probably still needed for compatibility
 	*implementationClass { ^this }
+}
+
+LSPDocumentChange {
+	var <>startLine, <>startChar, <>endLine, <>endChar, <>text;
+
+	*new {
+		|startLine, startChar, endLine, endChar, text|
+		^super.newCopyArgs(startLine, startChar, endLine, endChar, text)
+	}
+
+	*wholeDocument {
+		|text|
+		^this.new(nil, nil, nil, nil, text)
+	}
+
+	isWholeDocument {
+		^[startLine, startChar, endLine, endChar].includes(nil)
+	}
+
+	stringIndices {
+		|string|
+		^[
+			string.lineCharToIndex(startLine, startChar),
+			string.lineCharToIndex(endLine, endChar)
+		]
+	}
+}
+
++String {
+	lineCharToIndex {
+		|line, character|
+		var currentIndex = 0;
+
+		line.do {
+			currentIndex = this.find("\n", false, currentIndex);
+
+			if (currentIndex.isNil) {
+				^this.size
+			} {
+				currentIndex = currentIndex + 1
+			}
+		};
+
+		^(currentIndex + character)
+	}
 }
