@@ -80,11 +80,8 @@
 	*prGetNames { ^this.all[Server.default.name].keys } // @TODO Search across all servers here?
 }
 
-+NdefPreset { *isDefClass { ^true } }
 +Pdef { *isDefClass { ^true } }
-+PdefPreset { *isDefClass { ^true } }
 +Tdef { *isDefClass { ^true } }
-+TdefPreset  { *isDefClass { ^true } }
 +Fdef { *isDefClass { ^true } }
 +HIDdef { *isDefClass { ^true } }
 +MIDIdef { *isDefClass { ^true } }
