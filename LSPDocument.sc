@@ -76,7 +76,7 @@ LSPDocument {
 			uri,
 			string,
 			false,
-			uri.copy.replace("file://", ""),
+			uri.copy.replace("file://", "").urlDecode,
 			0,
 			0
 		);
@@ -200,7 +200,7 @@ LSPDocument {
 
 	path {
 		if (quuid.contains("file://")) {
-			^quuid.copy.replace("file://", "")
+			^quuid.copy.replace("file://", "").urlDecode
 		} {
 			^nil
 		}
