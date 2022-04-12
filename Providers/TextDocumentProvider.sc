@@ -109,6 +109,6 @@ TextDocumentProvider : LSPProvider {
 			}
 		};
 
-		changes.do(doc.applyChange(version, _));L
+		changes.do(doc.applyChange(version, _));
 	}
 }
