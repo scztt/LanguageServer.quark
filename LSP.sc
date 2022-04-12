@@ -145,22 +145,6 @@ LSPConnection {
 		}
 	}
 
-	prEncodeMessage {
-		|object|
-		var message;
-
-		try {
-			message = object.toJSON();
-		} {
-			|e|
-			// @TODO: Improve error messaging and behavior.
-			"Problem encoding message (%)".format(e).error;
-			^this
-		};
-
-		socket.sendRaw(message)
-	}
-
 	prHandleMessage {
 		|object|
 		var id, method, params, provider, deferredResult;
@@ -188,48 +172,74 @@ LSPConnection {
 					"Provider % is returning *itself* from handleRequest instead of providing an explicit nil or non-nil return value!".format(provider.class).warn;
 				};
 
-				if (result.notNil) {
-					this.prHandleResponse(id, result)
-				}
+				this.prHandleResponse(id, result);
 			}, {
 				|error|
 				// @TODO handle error
 				error.reportError;
-				this.prHandleErrorResponse(id, error.what);
+				this.prHandleErrorResponse(
+					id: id,
+					code: error.class.identityHash,
+					message: error.what,
+					// data: error.getBacktrace // @TODO Render backtrace as JSON?
+				);
 			});
 		}
 	}
 
 	prHandleErrorResponse {
-		|id, error|
-		var message = (
+		|id, code, message, data|
+		var response = (
 			id: id,
-			error: error
-		).toJSON;
+			error: (
+				code: code,
+				message: message,
+				data: data
+			)
+		);
 
-		Log('LanguageServer.quark').info("Responding to id: % with: %", id, message);
 
-		this.prSendMessage(message);
+		this.prSendMessage(response);
 	}
 
 	prHandleResponse {
 		|id, result|
-		var message = (
+		var response = (
 			id: id,
 			result: result
-		).toJSON;
+		);
 
-		Log('LanguageServer.quark').info("Responding to id: % with: %", id, message);
-
-		this.prSendMessage(message);
+		this.prSendMessage(response);
 	}
 
-	prSendMessage {
-		|message|
+	prEncodeMessage {
+		|dict|
+		var message;
+
+		try {
+			message = dict.toJSON();
+		} {
+			|e|
+			// Since JSON encoding JUST failed, lets avoid doing it again...
+			"{ \"code\": -1, \"message\": \"Failed to encode JSON response: %\" }".format(
+				e.what.escapeChar($")
+			)
+		};
+
 		message = "Content-Length: %\r\n\r\n%\n".format(
 			message.size + 1,
 			message
 		);
+
+		^message
+	}
+
+	prSendMessage {
+		|dict|
+		var message = this.prEncodeMessage(dict);
+
+		Log('LanguageServer.quark').info("Responding with: %", message);
+
 		socket.sendRaw(message);
 	}
 }
