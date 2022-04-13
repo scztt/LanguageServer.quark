@@ -21,7 +21,7 @@ EvaluateProvider : LSPProvider {
 		var source, document, function, result, resultStream;
 
 		source = params["sourceCode"];
-		document = LSPDocument.findByQUuid(params["textDocument"]["uri"]);
+		document = LSPDocument.findByQUuid(params["textDocument"]["uri"].urlDecode);
 
 		thisProcess.nowExecutingPath = document.path;
 
