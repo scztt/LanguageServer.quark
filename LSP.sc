@@ -204,9 +204,10 @@ LSPConnection {
 
 	prHandleResponse {
 		|id, result|
+			
 		var response = (
 			id: id,
-			result: result
+			result: result ?? { NilResponse() }
 		);
 
 		this.prSendMessage(response);
@@ -244,3 +245,9 @@ LSPConnection {
 	}
 }
 
+NilResponse {
+	asJSON {
+		toJSON { ^"null" }
+	}
+	// Placeholder for nil responses, since nil signifies an empty slot in a dictionary.
+}
