@@ -19,7 +19,7 @@ TextDocumentProvider : LSPProvider {
 		// https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocumentSyncOptions
 		^(
 			openClose: true,
-			change: 2, // Full,
+			change: 1, // Incremental
 			save: true
 		)
 	}
