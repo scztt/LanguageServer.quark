@@ -23,9 +23,12 @@ FoldingRangeProvider : LSPProvider {
 		^LSPDatabase.getDocumentRegions(doc).collect {
 			|range|
 			(
-				startLine: 	range[\start][\line],
-				endLine: 	range[\end][\line],
-				kind: 		"region"
+				kind: 			"region",
+
+				startLine: 		range[\start][\line],
+				startCharacter: range[\start][\character],
+				endLine: 		range[\end][\line],
+				endCharacter:	range[\end][\character],
 			)
 		}
 	}
