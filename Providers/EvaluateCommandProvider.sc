@@ -1,12 +1,12 @@
 // https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_implementation
-ExecuteCommandProvider : LSPProvider {
+EvaluateCommandProvider : LSPProvider {
 	*methodNames {
 		^[
-			"workspace/executeCommand",
+			"workspace/evaluateCommand",
 		]
 	}
-	*clientCapabilityName { ^"workspace.executeCommand" }
-	*serverCapabilityName { ^"executeCommandProvider" }
+	*clientCapabilityName { ^"workspace.evaluateCommand" }
+	*serverCapabilityName { ^"evaluateCommandProvider" }
 
 	init {
 		|clientCapabilities|
@@ -19,7 +19,7 @@ ExecuteCommandProvider : LSPProvider {
 	}
 
 	*commands {
-		^(			
+		^(
 			'supercollider.bootServer': {
 				Server.default.boot;
 			},
