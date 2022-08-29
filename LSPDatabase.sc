@@ -309,11 +309,12 @@ LSPDatabase {
 		|doc|
 		// @TODO Parse properly to account for e.g. comments...
 		var lines = doc.string.split($\n);
-		var startRe = "^\\(\\W*(\\\\.*)?$", endRe = "^\\)\\s*(//.*)?$";
+		var startRe = "^\\(\\W*(//.*)?$", endRe = "^\\)\\s*\\;?\\s*(//.*)?$";
 		var regionStack = [], regions=[], region;
 
 		lines.do {
 			|line, lineNum|
+
 			if (startRe.matchRegexp(line)) {
 				regionStack = regionStack.add((
 					start: (line: lineNum, character: 0)
