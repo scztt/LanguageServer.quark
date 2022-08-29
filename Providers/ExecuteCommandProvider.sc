@@ -1,12 +1,12 @@
 // https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_implementation
-EvaluateCommandProvider : LSPProvider {
+ExecuteCommandProvider : LSPProvider {
 	*methodNames {
 		^[
-			"workspace/evaluateCommand",
+			"workspace/executeCommand",
 		]
 	}
-	*clientCapabilityName { ^"workspace.evaluateCommand" }
-	*serverCapabilityName { ^"evaluateCommandProvider" }
+	*clientCapabilityName { ^"workspace.executeCommand" }
+	*serverCapabilityName { ^"executeCommandProvider" }
 
 	init {
 		|clientCapabilities|
@@ -20,19 +20,19 @@ EvaluateCommandProvider : LSPProvider {
 
 	*commands {
 		^(
-			'supercollider.bootServer': {
+			'supercollider.internal.bootServer': {
 				Server.default.boot;
 			},
-			'supercollider.rebootServer': {
+			'supercollider.internal.rebootServer': {
 				Server.default.reboot;
 			},
-			'supercollider.killAllServers': {
+			'supercollider.internal.killAllServers': {
 				Server.killAll();
 			},
-			'supercollider.showServerWindow': {
+			'supercollider.internal.showServerWindow': {
 				Server.default.makeWindow()
 			},
-			'supercollider.cmdPeriod': {
+			'supercollider.internal.cmdPeriod': {
 				CmdPeriod.run();
 			}
 		)
@@ -47,7 +47,8 @@ EvaluateCommandProvider : LSPProvider {
 
 		this.class.commands[command] !? {
 			|func|
-			^func.value();
+			func.value();
+			^nil
 		} ?? {
 			Exception("Command doesn't exist: %".format(command)).throw
 		}
