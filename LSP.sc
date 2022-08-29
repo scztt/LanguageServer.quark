@@ -204,7 +204,7 @@ LSPConnection {
 
 	prHandleResponse {
 		|id, result|
-			
+
 		var response = (
 			id: id,
 			result: result ?? { NilResponse() }
@@ -222,7 +222,7 @@ LSPConnection {
 		} {
 			|e|
 			// Since JSON encoding JUST failed, lets avoid doing it again...
-			"{ \"code\": -1, \"message\": \"Failed to encode JSON response: %\" }".format(
+			message = "{ \"code\": -1, \"message\": \"Failed to encode JSON response: %\" }".format(
 				e.what.escapeChar($")
 			)
 		};
@@ -246,8 +246,8 @@ LSPConnection {
 }
 
 NilResponse {
-	asJSON {
-		toJSON { ^"null" }
+	toJSON {
+		^"null"
 	}
 	// Placeholder for nil responses, since nil signifies an empty slot in a dictionary.
 }
