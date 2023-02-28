@@ -152,7 +152,7 @@ LSPConnection {
 		|object|
 		var id, method, params, provider, deferredResult;
 
-		id 		= object["id"];
+		id 		= object["id"] !? _.asInteger; // @HACK: sclang's JSON parse turns numbers into strings :(
 		method 	= object["method"].asSymbol;
 		params 	= object["params"];
 
