@@ -1,4 +1,4 @@
-// Base class for all LSP providers
+// Base class for all LSP features
 // At initialization time:
 //  1. Each subclass will be created IF the capability object provided by the client
 //     has non-null data at the field specified in `clientCapabilityName`. This data
@@ -24,7 +24,7 @@
 //     If results are not immediately available, a Deferred object can be returned, where
 //     the delayed result data can be set later using `deferred.value = result`.
 
-LSPProvider {
+LSPFeature {
 	var server;
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////
@@ -33,17 +33,14 @@ LSPProvider {
 	// Array of LSP method names to respond to, e.g.:["textDocument/didSave", "textDocument/didClose"]
 	*methodNames { this.subclassResponsibility(thisMethod) }
 
-	// Path to read in client capability data structure
+	// Path to read in client capability data structure.
 	*clientCapabilityName { this.subclassResponsibility(thisMethod) }
 
-	// Path to respond with server capability options
+	// Path to respond with server capability options. Can be nil.
 	*serverCapabilityName { this.subclassResponsibility(thisMethod) }
 
 	// Server capability response
 	options { ^() }
-
-	// Callback for any methods specified by `methodNames`
-	handleRequest { |method, params| this.subclassResponsibility(thisMethod) }
 
 	init { |clientCapabilities| this.subclassResponsibility(thisMethod) }
 
@@ -68,5 +65,19 @@ LSPProvider {
 		|server, clientCapabilities|
 		^super.newCopyArgs(server).init(clientCapabilities)
 	}
+}
 
+// LSPProvider describes a feature that responds to requests from a client
+LSPProvider : LSPFeature {
+	// Callback for any methods specified by `methodNames`
+	handleRequest { |method, params| this.subclassResponsibility(thisMethod) }
+}
+
+// LSPProvider describes a feature that responds to requests from a client
+LSPRequest : LSPFeature {
+	// Send a request for any method in `methodNames`
+	sendRequest { |method ...params| this.subclassResponsibility(thisMethod) }
+
+	// Callback for the response from `sendRequest`
+	handleRequest { |method, params| this.subclassResponsibility(thisMethod) }
 }
