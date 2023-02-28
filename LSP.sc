@@ -63,10 +63,10 @@ LSPConnection {
 		socket = NetAddr("127.0.0.1", outPort);
 		thisProcess.openUDPPort(inPort, \raw);
 
-		thisProcess.recvRawfunc = {
-			|time, replyAddr, msg|
+		thisProcess.addRawRecvFunc({
+			|msg, time, replyAddr, recvPort|
 			this.prOnReceived(time, replyAddr, msg)
-		};
+		});
 
 		// @TODO Is this the only "default" provider we want?
 		this.addProvider(InitializeProvider(this, {}));
