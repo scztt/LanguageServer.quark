@@ -240,11 +240,24 @@ LSPConnection {
 
 	prSendMessage {
 		|dict|
+		var maxSize = 8000;
+		var offset = 0;
+		var packetSize;
 		var message = this.prEncodeMessage(dict);
+		var messageSize = message.size;
 
 		Log('LanguageServer.quark').info("Responding with: %", message);
 
-		socket.sendRaw(message);
+		if (message.size < maxSize) {
+			socket.sendRaw(message);
+		} {
+			while { offset < messageSize } {
+				packetSize = min(messageSize, maxSize);
+				socket.sendRaw(message[offset..packetSize]);
+				offset = offset + packetSize;
+			}
+		}
+
 	}
 }
 
