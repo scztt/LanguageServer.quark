@@ -13,7 +13,7 @@ TextDocumentCompletionProvider : LSPProvider {
 	options {
 		^(
 			// @TODO Fetch these from LSPCompletionHandler
-			// triggerCharacters: [".", "(", "~"],
+			triggerCharacters: [".", "(", "~"],
 
 			// @TODO These are overridden by commit chars for each completion - do we need?
 			allCommitCharacters: [],

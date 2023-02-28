@@ -62,11 +62,14 @@ InitializeProvider : LSPProvider {
 
 				provider = providerClass.new(server, capability);
 
-				this.addServerCapability(
-					serverCapabilities,
-					providerClass.serverCapabilityName,
-					provider.options
-				);
+				providerClass.serverCapabilityName !? {
+					|capabilityName|
+					this.addServerCapability(
+						serverCapabilities,
+						capabilityName,
+						provider.options
+					)
+				};	
 
 				server.addProvider(provider);
 			}
