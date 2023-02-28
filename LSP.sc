@@ -122,7 +122,10 @@ LSPConnection {
 				messageLengthExpected = found[1][1].asInteger;
 				endOfHeader = found[2][0] + 1;
 				messageBuffer = messageBuffer[endOfHeader..];
+				Log('LanguageServer.quark').info("Expecting % bytes, received % so far", messageLengthExpected, messageBuffer.size());
 			}
+		} {
+			Log('LanguageServer.quark').info("Expecting % bytes, received % so far", messageLengthExpected, messageBuffer.size());
 		};
 
 		if (messageLengthExpected.notNil and: {
@@ -136,11 +139,11 @@ LSPConnection {
 				|e|
 				// @TODO: Improve error messaging and behavior.
 				"Problem parsing message (%)".format(e).error;
+				e.reportError;
 			};
 
 			^object
 		} {
-			messageBuffer = messageBuffer ++ message
 			^nil
 		}
 	}
