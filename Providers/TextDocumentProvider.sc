@@ -19,7 +19,7 @@ TextDocumentProvider : LSPProvider {
 		// https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocumentSyncOptions
 		^(
 			openClose: true,
-			change: 1, // Incremental
+			change: 2, // Incremental
 			save: true
 		)
 	}
@@ -56,7 +56,6 @@ TextDocumentProvider : LSPProvider {
 					uri: params["textDocument"]["uri"]
 				)
 			},
-
 			{
 				Error("Couldn't handle method: %".format(method)).throw
 			}
