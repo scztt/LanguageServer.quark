@@ -31,9 +31,8 @@
 					(
 						label: 			name,
 						filterText: 	name,
-						insertText:		"~%".format(name),
+						insertText:		"%$0".format(name),
 						insertTextFormat: 2, // Snippet,
-						kind: 			2, // ??
 
 						// @TODO Add documentation and detail
 						// detail:			nil,
