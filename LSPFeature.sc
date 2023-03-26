@@ -14,9 +14,9 @@
 //
 // When a provider is registered:
 //  1. Any request received by the LSPConnection matching a method specified by
-//     an LSPProviders's `methodNames` will be forwardeded to `LSPProvider:handleRequest`.
+//     an LSPProviders's `methodNames` will be forwardeded to `LSPProvider:onReceived`.
 //     The request `params` field will be passed as the second argument.
-//  2. Any value returned by `handleRequest` will be passed back to the LSP client.
+//  2. Any value returned by `onReceived` will be passed back to the LSP client.
 //     nil values indicate no response. MAKE SURE TO RESPOND WITH THE EXPECTED/CORRECT
 //     DATA STRUCTURE (search for ""Response:"" in the LSP documentation).
 //  3. Any responses that are expensive to calculate should be calculated in a thread with
@@ -70,14 +70,14 @@ LSPFeature {
 // LSPProvider describes a feature that responds to requests from a client
 LSPProvider : LSPFeature {
 	// Callback for any methods specified by `methodNames`
-	handleRequest { |method, params| this.subclassResponsibility(thisMethod) }
+	onReceived { |method, params| this.subclassResponsibility(thisMethod) }
 }
 
 // LSPProvider describes a feature that responds to requests from a client
 LSPRequest : LSPFeature {
 	// Send a request for any method in `methodNames`
-	sendRequest { |method ...params| this.subclassResponsibility(thisMethod) }
+	sendRequest { |params| this.subclassResponsibility(thisMethod) }
 
 	// Callback for the response from `sendRequest`
-	handleRequest { |method, params| this.subclassResponsibility(thisMethod) }
+	onReceived { |method, params| this.subclassResponsibility(thisMethod) }
 }

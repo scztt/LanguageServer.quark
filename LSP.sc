@@ -167,12 +167,12 @@ LSPConnection {
 			preprocessor.value(params);
 
 			Deferred().using({
-				provider.handleRequest(method, params);
+				provider.onReceived(method, params);
 			}, AppClock).then({
 				|result|
 
 				if (result == provider) {
-					"Provider % is returning *itself* from handleRequest instead of providing an explicit nil or non-nil return value!".format(provider.class).warn;
+					"Provider % is returning *itself* from onReceived instead of providing an explicit nil or non-nil return value!".format(provider.class).warn;
 				};
 
 				this.prHandleResponse(id, result);

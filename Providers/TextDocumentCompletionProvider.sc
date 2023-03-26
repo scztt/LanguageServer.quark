@@ -25,7 +25,7 @@ TextDocumentCompletionProvider : LSPProvider {
 		)
 	}
 
-	handleRequest {
+	onReceived {
 		|method, params|
 		var doc, line, character, triggerCharacters;
 

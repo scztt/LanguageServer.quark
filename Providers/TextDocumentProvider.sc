@@ -24,7 +24,7 @@ TextDocumentProvider : LSPProvider {
 		)
 	}
 
-	handleRequest {
+	onReceived {
 		|method, params|
 		Log('LanguageServer.quark').info("Handling: %", method);
 

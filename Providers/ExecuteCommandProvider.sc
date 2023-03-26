@@ -38,7 +38,7 @@ ExecuteCommandProvider : LSPProvider {
 		)
 	}
 
-	handleRequest {
+	onReceived {
 		|method, params|
 		var command, arguments;
 

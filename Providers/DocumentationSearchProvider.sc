@@ -20,7 +20,7 @@ DocumentationSearchProvider : LSPProvider {
 		)
 	}
 
-	handleRequest {
+	onReceived {
 		|method, params|
 		^(
 			uri: params["searchString"].postln.findHelpFile.postln;

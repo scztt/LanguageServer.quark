@@ -16,7 +16,7 @@ EvaluateProvider : LSPProvider {
 		^()
 	}
 
-	handleRequest {
+	onReceived {
 		|method, params|
 		var source, document, function, result, resultStream;
 

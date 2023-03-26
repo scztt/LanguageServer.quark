@@ -1,12 +1,12 @@
 // https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_codeAction
-FoldingRangeProvider : LSPProvider {
+WorkspaceConfiguration : LSPRequest {
 	*methodNames {
 		^[
-			"textDocument/foldingRange",
+			"workspace/configuration",
 		]
 	}
-	*clientCapabilityName { ^"textDocument.foldingRange" }
-	*serverCapabilityName { ^"foldingRangeProvider" }
+	*clientCapabilityName { ^"textDocument.codeLens" }
+	*serverCapabilityName { ^nil }
 
 	init {
 		|clientCapabilities|
@@ -23,12 +23,12 @@ FoldingRangeProvider : LSPProvider {
 		^LSPDatabase.getDocumentRegions(doc).collect {
 			|range|
 			(
-				kind: 			"region",
-
-				startLine: 		range[\start][\line],
-				startCharacter: range[\start][\character],
-				endLine: 		range[\end][\line],
-				endCharacter:	range[\end][\character],
+				range: range,
+				command: (
+					title: "▶ Evaluate block",
+					command: "supercollider.evaluateSelection",
+					arguments: [range]
+				)
 			)
 		}
 	}
