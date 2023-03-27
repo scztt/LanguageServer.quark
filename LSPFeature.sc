@@ -55,7 +55,8 @@ LSPFeature {
 	*all {
 		var providerClasses, dictionary;
 
-		providerClasses = this.allSubclasses.reject(_ == DynamicProvider);
+		providerClasses = this.allSubclasses.collect(_.allSubclasses).flatten;
+		providerClasses = providerClasses.reject(_ == DynamicProvider).reject(_.isNil);
 		providerClasses = providerClasses.addAll(DynamicProvider.all);
 
 		^providerClasses
@@ -76,8 +77,8 @@ LSPProvider : LSPFeature {
 // LSPProvider describes a feature that responds to requests from a client
 LSPRequest : LSPFeature {
 	// Send a request for any method in `methodNames`
-	sendRequest { |params| this.subclassResponsibility(thisMethod) }
-
-	// Callback for the response from `sendRequest`
-	onReceived { |method, params| this.subclassResponsibility(thisMethod) }
+	sendRequest { 
+		|params| 		// @TODO What about multiple method names?
+		^server.prHandleRequest(this.methodNames[0], params)
+	}
 }

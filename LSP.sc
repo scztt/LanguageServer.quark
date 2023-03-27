@@ -6,6 +6,8 @@ LSPConnection {
 	var <>inPort, <>outPort;
 	var socket;
 	var messageLengthExpected, messageBuffer;
+	var requestId=0;
+	var outstandingRequests;
 
 	*initClass {
 		var settings;
@@ -54,6 +56,7 @@ LSPConnection {
 		|settings|
 		inPort = settings[\inPort];
 		outPort = settings[\outPort];
+		outstandingRequests = ();
 	}
 
 	start {
@@ -152,7 +155,11 @@ LSPConnection {
 		|object|
 		var id, method, params, provider, deferredResult;
 
-		id 		= object["id"] !? _.asInteger; // @HACK: sclang's JSON parse turns numbers into strings :(
+		if (object["result"].notNil) {
+			^this.prHandleResultMessage(object)
+		};
+
+		id 		= object["id"] !? { |id| id.isInteger.if({ id.asInteger }, { id.asSymbol }) }; // @HACK: sclang's JSON parse turns numbers into strings :(
 		method 	= object["method"].asSymbol;
 		params 	= object["params"];
 
@@ -190,6 +197,23 @@ LSPConnection {
 		}
 	}
 
+	prHandleResultMessage {
+		|object|
+		var id, method, result, provider, deferredResult;
+
+		id 		= object["id"] !? { |id| id.asSymbol };
+		result 	= object["result"];
+
+		if (outstandingRequests[id].notNil) {
+			// This is a response to a request of ours, so handle this directly.
+			Log('LanguageServer.quark').info("Handling a follow-up request with: %", outstandingRequests[id]);
+			outstandingRequests[id].value = result;
+			^this;
+		} {
+			"Received a response message from client, but we were not expecting one (id = %)".format(id).error;
+		}
+	}
+
 	prHandleErrorResponse {
 		|id, code, message, data|
 		var response = (
@@ -214,6 +238,23 @@ LSPConnection {
 		);
 
 		this.prSendMessage(response);
+	}
+
+	prHandleRequest {
+		|method, params|
+		var response;
+		var id = "sclang-server-request-%".format(requestId).asSymbol;
+		requestId = requestId + 1;
+		this.prSendMessage((
+			id: id,
+			method: method,
+			params: params,
+		));
+		response = Deferred();
+		response.then({ outstandingRequests[id] = nil });
+		outstandingRequests[id] = response;
+		response.debug;
+		^response
 	}
 
 	prEncodeMessage {

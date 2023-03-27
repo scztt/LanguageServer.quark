@@ -1,5 +1,8 @@
 // https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_implementation
 EvaluateProvider : LSPProvider {
+	var resultPrefix="> ";
+	var postResult=true;
+
 	*methodNames {
 		^[
 			"textDocument/evaluateSelection",
@@ -10,6 +13,13 @@ EvaluateProvider : LSPProvider {
 
 	init {
 		|clientCapabilities|
+		server.addDependant({
+			|server, message, value|
+			if (message == \clientOptions) {
+				resultPrefix = value['sclang.evaluateResultPrefix'] ?? {"> "};
+				postResult = value['sclang.postEvaluateResults'] ? true;
+			}
+		})
 	}
 
 	options {
@@ -35,9 +45,19 @@ EvaluateProvider : LSPProvider {
 				resultStream = CollStream("");
 				function.value().printOn(resultStream);
 				result[\result] = resultStream.collection;
+
+				if (postResult) {
+					resultPrefix.post;
+					resultStream.contents.postln;
+				}
 			} {
 				|error|
 				result[\error] = error.errorString;
+				
+				if (postResult) {
+					resultPrefix.post;
+					error.postln;
+				}
 			};
 		};
 

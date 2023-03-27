@@ -25,7 +25,7 @@ InitializeProvider : LSPProvider {
 		)
 	}
 
-	handleRequest {
+	onReceived {
 		|method, params|
 		var serverCapabilities;
 
@@ -43,7 +43,7 @@ InitializeProvider : LSPProvider {
 
 	addProviders {
 		|clientCapabilities, serverCapabilities, pathRoot=([])|
-		var allProviders = LSPProvider.all;
+		var allProviders = LSPFeature.all;
 
 		Log('LanguageServer.quark').info("Found providers: %", allProviders.collect(_.methodNames).join(", "));
 
