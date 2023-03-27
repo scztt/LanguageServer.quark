@@ -56,7 +56,7 @@ EvaluateProvider : LSPProvider {
 				
 				if (postResult) {
 					resultPrefix.post;
-					error.postln;
+					error.dumpBackTrace();
 				}
 			};
 		};
