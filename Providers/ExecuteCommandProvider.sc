@@ -32,6 +32,33 @@ ExecuteCommandProvider : LSPProvider {
 			'supercollider.internal.showServerWindow': {
 				Server.default.makeWindow()
 			},
+			'supercollider.internal.showServerMeter': {
+				Server.default.meter()
+			},
+			'supercollider.internal.showScope': {
+				Server.default.scope()
+			},
+			'supercollider.internal.showFreqscope': {
+				Server.default.freqscope()
+			},
+			'supercollider.internal.dumpNodeTree': {
+				Server.default.queryAllNodes()
+			},
+			'supercollider.internal.dumpNodeTreeWithControls': {
+				Server.default.queryAllNodes(true)
+			},
+			'supercollider.internal.plotTree': {
+				Server.default.plotTree()
+			},
+			'supercollider.internal.startRecording': {
+				Server.default.record()
+			},
+			'supercollider.internal.pauseRecording': {
+				Server.default.pauseRecording()
+			},
+			'supercollider.internal.stopRecording': {
+				Server.default.stopRecording()
+			},
 			'supercollider.internal.cmdPeriod': {
 				CmdPeriod.run();
 			}
