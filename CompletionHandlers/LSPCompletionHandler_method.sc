@@ -9,8 +9,6 @@
 				|prefix|
 				// @TODO improve regex / parsing ...
 				var prefixString = prefix.findRegexp("^[^~0-9A-Za-z-]*([~0-9a-z][\\w\\.]*)");
-				prefix.postln;
-				prefixString.postln;
 
 				if (prefixString.notEmpty) {
 					prefixString = prefixString[1][1];

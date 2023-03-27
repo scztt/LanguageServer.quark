@@ -32,9 +32,9 @@ SelectionRangeProvider : LSPProvider {
 			(
 				range: regions.detect({
 					|region|
-					(position[\line] >= region[\start][\line].postln)
-					and: { position[\line] <= region[\end][\line].postln }
-				}).postln ?? {( 
+					(position[\line] >= region[\start][\line])
+					and: { position[\line] <= region[\end][\line] }
+				}) ?? {( 
 					// empty
 				)}
 			)

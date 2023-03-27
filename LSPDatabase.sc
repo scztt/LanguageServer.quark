@@ -415,10 +415,8 @@ LSPDatabase {
 		index = LSPDatabase.findSymbolStartIndex(query, symbolObjects);
 		limit = index + limit;
 
-		"start index: %".format(index).postln;
-
 		while { index < limit and: { symbolObjects[index].name.asString.beginsWith(query) }} {
-			result = result.add(symbolObjects[index].postln);
+			result = result.add(symbolObjects[index]);
 			index = index + 1;
 		};
 
@@ -461,7 +459,7 @@ LSPDatabase {
 			index = high + low div: 2;
 			low <= high;
 		} {
-			if (all[index].name.asString.toLower.postln < query.postln) {
+			if (all[index].name.asString.toLower < query) {
 				low = index + 1;
 			} {
 				high = index - 1;
