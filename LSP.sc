@@ -36,7 +36,9 @@ LSPConnection {
 			StartUp.add({
 				lspConnection = LSPConnection().start;
 			})
-		}
+		};
+
+		Log('LanguageServer.quark').level = \error;
 	}
 
 	*new {
@@ -48,7 +50,8 @@ LSPConnection {
 		^(
 			enabled: "SCLANG_LSP_ENABLE".getenv().notNil,
 			inPort: "SCLANG_LSP_CLIENTPORT".getenv() ?? { 57210 } !? _.asInteger,
-			outPort: "SCLANG_LSP_SERVERPORT".getenv() ?? { 57211 } !? _.asInteger
+			outPort: "SCLANG_LSP_SERVERPORT".getenv() ?? { 57211 } !? _.asInteger,
+			logLevel: "SCLANG_LSP_LOGLEVEL".getenv() ?? { \error } !? _.asSymbol,
 		)
 	}
 
@@ -57,6 +60,14 @@ LSPConnection {
 		inPort = settings[\inPort];
 		outPort = settings[\outPort];
 		outstandingRequests = ();
+		Log('LanguageServer.quark').level = settings[\logLevel];
+
+		this.addDependant({
+			|server, message, value|
+			if (message == \clientOptions) {
+				Log('LanguageServer.quark').level = value['languageServerLogLevel'] !? _.asSymbol ?? { \error };
+			}
+		})
 	}
 
 	start {
