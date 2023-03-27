@@ -12,7 +12,6 @@ TextDocumentProvider : LSPProvider {
 	*serverCapabilityName { ^"textDocumentSync" }
 
 	init {
-		Log('LanguageServer.quark').level = \info;
 	}
 
 	options {
