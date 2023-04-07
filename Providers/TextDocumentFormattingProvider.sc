@@ -1,13 +1,15 @@
 // https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_formatting
 TextDocumentFormattingProvider : LSPProvider {
-	classvar <>formatter;
+	classvar <>formatter, <>formatterEnabled=false;
 
 	*methodNames { ^["textDocument/formatting"] }
 	*clientCapabilityName { ^"textDocument.formatting" }
 	*serverCapabilityName { ^"documentFormattingProvider" }
 
 	*initClass {
-		formatter = CodeFormatter();
+		if (formatterEnabled) {
+			formatter = CodeFormatter();
+		}
 	}
 
 	init {
@@ -15,13 +17,19 @@ TextDocumentFormattingProvider : LSPProvider {
 	}
 
 	options {
-		^(
-		)
+		if (formatterEnabled) {
+			^(
+			)
+		} {
+			^nil
+		}
 	}
 
 	onReceived {
 		|method, params|
 		Log('LanguageServer.quark').info("Handling: %", method);
+
+		if (formatterEnabled.not) { ^this };
 
 		switch(
 			method,
