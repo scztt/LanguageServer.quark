@@ -29,7 +29,7 @@ TextDocumentFormattingProvider : LSPProvider {
 		|method, params|
 		Log('LanguageServer.quark').info("Handling: %", method);
 
-		if (formatterEnabled.not) { ^this };
+		if (formatterEnabled.not) { ^nil };
 
 		switch(
 			method,
@@ -100,6 +100,8 @@ TextDocumentTypeFormattingProvider : LSPProvider {
 	onReceived {
 		|method, params|
 		Log('LanguageServer.quark').info("Handling: %", method);
+
+		if (TextDocumentFormattingProvider.formatterEnabled.not) { ^nil };
 
 		switch(
 			method,
