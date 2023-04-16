@@ -1,5 +1,5 @@
 CodeFormatter {
-	classvar <>formatCmd = "/Users/Shared/_code/sclang-format/cmake-build-Debug/src/sclang-format";
+	classvar <>formatCmd = "/Users/Shared/_code/sclang-format/cmake-build-RelWithDebInfo/src/sclang-format";
 	var <tabSize=4, <insertSpaces=true;
 	var <inPipe, <outPipe, pid;
 
@@ -48,7 +48,6 @@ CodeFormatter {
 		var read, result;
 
 		outPipe.putString(code);
-		outPipe.putChar($\n);
 		outPipe.putChar(0.asAscii);
 		outPipe.flush();
 
