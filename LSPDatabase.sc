@@ -236,15 +236,15 @@ LSPDatabase {
 		|method, sortByClassHierarchy=false|
 		var sortText;
 
-		if (sortByClassHierarchy && method.ownerClass.isMetaClass) {
+		if (sortByClassHierarchy) {
 			sortText = (9 - method.ownerClass.superclasses.size).asString.zeroPad()
 		} {
 			sortText = "%:%".format(method.ownerClass.name, method.name)
 		};
 
 		^(
-			label: (
-				label: 				method.name.asString,
+			label: method.name.asString,
+			labelDetails: (
 				detail: 			LSPDatabase.methodArgString(method),
 				description: 		method.ownerClass.name.asString
 			),
@@ -265,7 +265,7 @@ LSPDatabase {
 			insertText:				LSPDatabase.methodInsertString(method),
 			insertTextFormat: 		2, // Snippet,
 			// range: (),
-			commitCharacters: 		["("]
+			// commitCharacters: 		["("]
 		)
 	}
 
@@ -367,9 +367,7 @@ LSPDatabase {
 		|class|
 		var name = class.name.asString;
 		^(
-			label: (
-				label: 				name,
-			),
+			label: name,
 			kind: 7, 				// CompletionItemKind.Class
 			// deprecated: false,	// mark this as deprecated - no way to use this?
 			// detail:				// @TODO: additional detail
