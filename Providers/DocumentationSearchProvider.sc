@@ -22,8 +22,14 @@ DocumentationSearchProvider : LSPProvider {
 
 	onReceived {
 		|method, params|
-		^(
-			uri: params["searchString"].findHelpFile;
-		)
+		var path = params["searchString"].findHelpFile;
+		if (path.notNil) {
+			^(
+				uri: path,
+				rootUri: SCDoc.helpTargetUrl
+			)
+		} {
+			^nil
+		}
 	}
 }
