@@ -182,7 +182,11 @@ LSPConnection {
 			Log('LanguageServer.quark').info("Found method provider: %", provider);
 
 			// Preprocess param values into a usable state
-			preprocessor.value(params);
+			try {
+				preprocessor.value(params);
+			} { |e|
+				Log('LanguageServer.quark').error(e);
+			};
 
 			Deferred().using({
 				provider.onReceived(method, params);
