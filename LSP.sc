@@ -170,7 +170,7 @@ LSPConnection {
 			^this.prHandleResultMessage(object)
 		};
 
-		id 		= object["id"] !? { |id| id.isInteger.if({ id.asInteger }, { id.asSymbol }) }; // @HACK: sclang's JSON parse turns numbers into strings :(
+		id 		= object["id"] !? { |id| "^[0-9]+$".matchRegexp(id).if({ id.asInteger }, { id.asSymbol }) };
 		method 	= object["method"].asSymbol;
 		params 	= object["params"];
 
