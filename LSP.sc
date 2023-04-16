@@ -23,7 +23,7 @@ LSPConnection {
 		preprocessor = {
 			|params|
 
-			params["params"] !? _["position"] !? {
+			params !? _["params"] !? _["position"] !? {
 				|position|
 				position["line"] = position["line"].asInteger;
 				position["character"] = position["character"].asInteger;
