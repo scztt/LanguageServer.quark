@@ -161,7 +161,7 @@ LSPDatabase {
 
 	*methodInsertString {
 		|method|
-		^"%(%${0})".format(
+		^"%(%)${0}".format(
 			method.name,
 			(method.argNames !? _[1..] ?? []).collect({
 				|a, i|
