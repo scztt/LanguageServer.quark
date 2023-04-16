@@ -292,7 +292,7 @@ LSPConnection {
 
 	prSendMessage {
 		|dict|
-		var maxSize = 8000;
+		var maxSize = 6000;
 		var offset = 0;
 		var packetSize;
 		var message = this.prEncodeMessage(dict);
@@ -305,7 +305,7 @@ LSPConnection {
 		} {
 			while { offset < messageSize } {
 				packetSize = min(messageSize, maxSize);
-				socket.sendRaw(message[offset..packetSize]);
+				socket.sendRaw(message[offset..(offset + packetSize - 1)]);
 				offset = offset + packetSize;
 			}
 		}
