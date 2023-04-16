@@ -35,13 +35,9 @@
 
 				Log('LanguageServer.quark').info("Found % method completions", methods.size);
 
-				// @TODO Remove once we fix RPC content-size stuff - without this, we often
-				// have too many methods and our response will fail.
-				methods = methods[0..100];
-
 				// @TODO Fetch results via a single method in LSPDatabase, so we can
 				// cache the entire response data rather than iterating here?
-				results = methods.collect(LSPDatabase.makeMethodCompletion(_));
+				results = methods.collect(LSPDatabase.makeMethodCompletion(_, true));
 
 				provideCompletionsFunc.value(results, false);
 			}
