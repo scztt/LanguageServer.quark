@@ -25,60 +25,60 @@
 //     the delayed result data can be set later using `deferred.value = result`.
 
 LSPFeature {
-	var server;
-
-	//////////////////////////////////////////////////////////////////////////////////////////////////
-	// SUBCLASS INTERFACE
-
-	// Array of LSP method names to respond to, e.g.:["textDocument/didSave", "textDocument/didClose"]
-	*methodNames { this.subclassResponsibility(thisMethod) }
-
-	// Path to read in client capability data structure.
-	*clientCapabilityName { this.subclassResponsibility(thisMethod) }
-
-	// Path to respond with server capability options. Can be nil.
-	*serverCapabilityName { this.subclassResponsibility(thisMethod) }
-
-	// Server capability response
-	options { ^() }
-
-	init { |clientCapabilities| this.subclassResponsibility(thisMethod) }
-
-
-	//////////////////////////////////////////////////////////////////////////////////////////////////
-	// IMPLEMENTATION
-
-	methodNames { ^this.class.methodNames }
-	clientCapabilityName {^ this.class.clientCapabilityName }
-	serverCapabilityName { ^this.class.serverCapabilityName }
-
-	*all {
-		var providerClasses, dictionary;
-
-		providerClasses = this.allSubclasses.collect(_.allSubclasses).flatten;
-		providerClasses = providerClasses.reject(_ == DynamicProvider).reject(_.isNil);
-		providerClasses = providerClasses.addAll(DynamicProvider.all);
-
-		^providerClasses
-	}
-
-	*new {
-		|server, clientCapabilities|
-		^super.newCopyArgs(server).init(clientCapabilities)
-	}
+    var server;
+    
+    //////////////////////////////////////////////////////////////////////////////////////////////////
+    // SUBCLASS INTERFACE
+    
+    // Array of LSP method names to respond to, e.g.:["textDocument/didSave", "textDocument/didClose"]
+    *methodNames { this.subclassResponsibility(thisMethod) }
+        
+        // Path to read in client capability data structure.
+        *clientCapabilityName { this.subclassResponsibility(thisMethod) }
+        
+        // Path to respond with server capability options. Can be nil.
+        *serverCapabilityName { this.subclassResponsibility(thisMethod) }
+        
+        // Server capability response
+        options { ^() }
+        
+        init { |clientCapabilities| this.subclassResponsibility(thisMethod) }
+        
+        
+        //////////////////////////////////////////////////////////////////////////////////////////////////
+        // IMPLEMENTATION
+        
+        methodNames { ^this.class.methodNames }
+        clientCapabilityName {^ this.class.clientCapabilityName }
+        serverCapabilityName { ^this.class.serverCapabilityName }
+        
+        *all {
+            var providerClasses, dictionary;
+            
+            providerClasses = this.allSubclasses.collect(_.allSubclasses).flatten;
+            providerClasses = providerClasses.reject(_ == DynamicProvider).reject(_.isNil);
+            providerClasses = providerClasses.addAll(DynamicProvider.all);
+            
+            ^providerClasses
+        }
+        
+        *new {
+            |server, clientCapabilities|
+            ^super.newCopyArgs(server).init(clientCapabilities)
+        }
 }
 
 // LSPProvider describes a feature that responds to requests from a client
 LSPProvider : LSPFeature {
-	// Callback for any methods specified by `methodNames`
-	onReceived { |method, params| this.subclassResponsibility(thisMethod) }
+    // Callback for any methods specified by `methodNames`
+    onReceived { |method, params| this.subclassResponsibility(thisMethod) }
 }
 
 // LSPProvider describes a feature that responds to requests from a client
 LSPRequest : LSPFeature {
-	// Send a request for any method in `methodNames`
-	sendRequest { 
-		|params| 		// @TODO What about multiple method names?
-		^server.prHandleRequest(this.methodNames[0], params)
-	}
+    // Send a request for any method in `methodNames`
+    sendRequest { 
+        |params| 		// @TODO What about multiple method names?
+        ^server.prHandleRequest(this.methodNames[0], params)
+    }
 }
