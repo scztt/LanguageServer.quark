@@ -24,7 +24,7 @@ DocumentationSearchProvider : LSPProvider {
         var path = params["searchString"].findHelpFile;
         if (path.notNil) {
             ^(
-                uri: path,
+                uri: SCDoc.prepareHelpForURL(path),
                 rootUri: SCDoc.helpTargetUrl
             )
         } {
