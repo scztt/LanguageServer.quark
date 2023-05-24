@@ -111,7 +111,7 @@ SignatureHelpProvider : LSPProvider {
             if (parenScope == 0) {
                 var start = string.findBackwards("\n", true, i);
                 start = start !? { start + 1 } ?? { 0 };
-                match = string[start..i].findRegexp("\\b(([A-Z][A-Za-z0-9_]*)\\.)?([A-Za-z][a-zA-Z0-9_]*)\\($").postln;
+                match = string[start..i].findRegexp("\\b(([A-Z][A-Za-z0-9_]*)\\.)?([A-Za-z][a-zA-Z0-9_]*)\\($");
                 if (match.size >= 2) {
                     ^[
                         match[3][1],
