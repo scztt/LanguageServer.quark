@@ -45,7 +45,7 @@ LSPCompletionHandler {
 		|lineString, triggerCharacters|
 		var prefix, completion, completionTrigger;
 		var char = lineString.size - 1;
-		var classnameRegex = "^.*\\W([A-Z][A-Za-z0-9_]*)$";
+        var classnameRegex = "^.*\\b([A-Z][A-Za-z0-9_]*)$";
 		var classnameMatch;
 
 		classnameMatch = lineString.findRegexp(classnameRegex);
