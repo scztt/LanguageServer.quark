@@ -1,5 +1,5 @@
 LSPConnection {
-    classvar <lspConnection;
+    classvar <connection;
     classvar <providers, <>preprocessor;
     classvar readyMsg = "***LSP READY***";
     
@@ -34,7 +34,7 @@ LSPConnection {
         
         if (settings[\enabled].asBoolean) {
             StartUp.add({
-                lspConnection = LSPConnection().start;
+                connection = LSPConnection().start;
             })
         };
         
