@@ -159,6 +159,19 @@ LSPDatabase {
         )
     }
     
+    *methodArgDefaultString {
+        |method|
+        ^"(%)".format(
+            ((method.argNames !? _[1..]) !? _.collect({
+                |argName, i|
+                "%%".format(
+                    argName,
+                    method.prototypeFrame[i + 1] !? format(" = %", _) ?? ""
+                )
+            }) ?? []).join(", "),
+        )
+    }
+    
     *methodInsertString {
         |method|
         ^"%(%)${0}".format(
@@ -176,10 +189,10 @@ LSPDatabase {
     
     *findDefinitions {
         |word|
-        var methods;
+        var methods, asClass;
         
-        if (word.isClassName) {
-            ^[this.renderClassLocation(word.asClass)]
+        if (word.isClassName and: { (asClass = word.asClass).notNil }) {
+            ^[this.renderClassLocation(asClass)]
         } {
             methods = this.methodsForName(word);
             
@@ -277,6 +290,71 @@ LSPDatabase {
         )
     }
     
+    *methodDocString {
+        |method|
+        var node, doc, stream, methodType;
+        node = method.docNode;
+        if (node.isNil) {
+            ^""
+        };
+        
+        try {
+            stream = CollStream("");
+            SCDocHTMLRenderer.renderMethod(stream, node, \genericMethod, method.ownerClass);
+            ^stream.collection;
+        } {
+            ^""
+        }
+    }
+    
+    *methodSignature {
+        |method|
+        var args, argDocs, methodDoc;
+        args = method.argNames !? _[1..] ?? [];
+        // methodDoc = LSPDatabase.methodDocString(method);
+        
+        ^(
+            label: "%:%%".format(
+                method.ownerClass.name, 
+                method.name,
+                this.methodArgDefaultString(method)
+            ),
+            documentation: (
+                kind: "markdown",
+            ),
+            parameters: args.collect {
+                |argument, i|
+                (
+                    label: argument
+                )
+            }
+        )
+    }
+    
+    *constructorSignature {
+        |method|
+        var args, argDocs, methodDoc;
+        args = method.argNames !? _[1..] ?? [];
+        // methodDoc = LSPDatabase.methodDocString(method);
+        
+        ^(
+            label: "%%".format(
+                method.ownerClass.name.asString.replace("Meta_", ""), 
+                this.methodArgDefaultString(method)
+            ),
+            documentation: (
+                kind: "markdown",
+            ),
+            parameters: args.collect {
+                |argument, i|
+                (
+                    label: argument
+                )
+            }
+        )
+    }
+    
+    
     *getDocumentLine {
         |doc, line|
         ^doc.getLine(line)
@@ -291,7 +369,7 @@ LSPDatabase {
         Log('LanguageServer.quark').info("Searching line for a word: '%' at %:%", lineString, line, character);
         
         while {
-            (start >= 0) and: { (lineString[start].isAlphaNum or: { lineString[start] == $_ }) }
+            (start >= 0) and: { ((lineString[start] !? _.isAlphaNum ?? true)  or: { lineString[start] == $_ }) }
         } {
             start = start - 1
         };
@@ -309,16 +387,27 @@ LSPDatabase {
         |doc|
         // @TODO Parse properly to account for e.g. comments...
         var lines = doc.string.split($\n);
-        var startRe = "^\\(\\W*(//.*)?$", endRe = "^\\)\\s*\\;?\\s*(//.*)?$";
-        var regionStack = [], regions=[], region;
+        var startRe = "^\\(\\s*(//)?\\s*(.*)\\s*$", endRe = "^\\)\\s*\\;?\\s*(//.*)?$";
+        var regionStack=[], nameStack=[], regions=[], region;
         
         lines.do {
             |line, lineNum|
+            var start;
             
-            if (startRe.matchRegexp(line)) {
+            if ((start = line.findRegexp(startRe)).notEmpty) {
                 regionStack = regionStack.add((
                     start: (line: lineNum, character: 0)
                 ));
+                
+                if (start.isEmpty) {
+                    nameStack = nameStack.add("[block %]".format(regions.size + nameStack.size));                       
+                } {
+                    if (start[2][1].size > 0) {
+                        nameStack = nameStack.add(start[2][1]);                                    
+                    } {
+                        nameStack = nameStack.add("[block %]".format(regions.size + nameStack.size));                                    
+                    }
+                }
             } {
                 if (endRe.matchRegexp(line)) {
                     if (regionStack.size > 0) {
@@ -326,7 +415,10 @@ LSPDatabase {
                             \end,
                             (line: lineNum, character: line.size)
                         );
-                        regions = regions.add(regionStack.removeAt(regionStack.size-1));
+                        regions = regions.add((
+                            range: regionStack.removeAt(regionStack.size-1),
+                            text: nameStack.removeAt(nameStack.size-1)
+                        ));
                     }
                 }
             }
@@ -413,7 +505,12 @@ LSPDatabase {
         index = LSPDatabase.findSymbolStartIndex(query, symbolObjects);
         limit = index + limit;
         
-        while { index < limit and: { symbolObjects[index].name.asString.beginsWith(query) }} {
+        while { index < limit and: { 
+            symbolObjects[index] !? {
+                |cls|
+                cls.name.asString.beginsWith(query)
+            } ?? false 
+        }} {
             result = result.add(symbolObjects[index]);
             index = index + 1;
         };
@@ -486,3 +583,20 @@ LSPDatabase {
     }
 }
 
++Method {
+    docNode {
+        var owner = this.ownerClass;
+        var name = this.name.asString;
+        if (owner.isMetaClass) {
+            ^SCDoc.getMethodDoc(
+                owner.name.asString.replace("Meta_", ""), 
+                "*" ++ name
+            )
+        } {
+            ^SCDoc.getMethodDoc(
+                owner.name.asString, 
+                "-" ++ name
+            )
+        };
+    }
+}
