@@ -88,7 +88,7 @@ TextDocumentProvider : LSPProvider {
         var range;
         
         if (doc.isOpen.not) {
-            Exception("Changing an LSPDocument(%) that is not open - something is wrong...", uri).throw;
+            Exception("Changing an LSPDocument(%) that is not open - something is wrong...".format(uri)).throw;
         };
         
         changes = changes.collect {
