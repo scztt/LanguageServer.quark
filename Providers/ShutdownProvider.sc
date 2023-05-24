@@ -30,6 +30,7 @@ ShutdownProvider : LSPProvider {
             { 'shutdown' } {
                 Log('LanguageServer.quark').info("Preparing to shutdown");
                 receivedShutdown = true;
+                Server.killAll;
                 {
                     Log('LanguageServer.quark').info("We're still alive..... killing.");
                     1.exit;

@@ -32,7 +32,20 @@ InitializeProvider : LSPProvider {
         var serverCapabilities;
         
         initializeParams = params;
-        
+
+        initializeParams["workspaceFolders"] !? {
+            |folders|
+            folders.do {
+                |folder|
+                server.workspaceFolders.add(folder["uri"].copy.replace("file://", "").urlDecode)
+            };
+        } ?? {
+            initializeParams["rootUri"] ?? initializeParams["rootPath"] !? {
+                |root|
+                server.workspaceFolders.add(root.copy.replace("file://", "").urlDecode)
+            };
+        };
+
         serverCapabilities = ();
         this.addProviders(initializeParams["capabilities"], serverCapabilities);
         Log('LanguageServer.quark').info("Server capabilities are: %", serverCapabilities);

@@ -55,17 +55,11 @@ LSPDocument {
     }
     
     *open { | path, selectionStart=0, selectionLength=0, envir |
-        // var doc;
-        // path = this.standardizePath(path);
-        // allDocuments.do{ |d|
-        // 	if(d.path == path.absolutePath){
-        // 		doc = d
-        // 	};
-        // };
-        // if(doc.notNil, { ^doc.front });
-        // doc = super.new.initFromPath(path, selectionStart, selectionLength);
-        // if (envir.notNil and: { doc.notNil }) { doc.envir_(envir) };
-        // ^doc
+        LSPConnection.connection.request('window/showDocument', (
+            uri: "file://%".format(path.standardizePath),
+            takeFocus: true,
+            // selection: 
+        ))
     }
     
     *syncFromIDE {|uri, string|
@@ -531,7 +525,7 @@ LSPDocument {
         // ^str.copyRange(start + 1, end);
     }
     
-    getLine {
+    charRangeForLine {
         |line|
         var startChar = 0, currentLine = 0, endChar = 0;
         var string = this.text;
@@ -555,7 +549,14 @@ LSPDocument {
             endChar = endChar + 1
         };
         
-        ^string[startChar..endChar]
+        ^[startChar, endChar]
+    }
+    
+    getLine {
+        |line|
+        var start, end;
+        #start, end = this.charRangeForLine(line);
+        ^string[start..end]
     }
     
     // document setup

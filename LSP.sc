@@ -8,6 +8,7 @@ LSPConnection {
     var messageLengthExpected, messageBuffer;
     var requestId=0;
     var outstandingRequests;
+    var <workspaceFolders;
     
     *initClass {
         var settings;
@@ -60,6 +61,8 @@ LSPConnection {
         inPort = settings[\inPort];
         outPort = settings[\outPort];
         outstandingRequests = ();
+        workspaceFolders = List();
+
         Log('LanguageServer.quark').level = settings[\logLevel];
         
         this.addDependant({
@@ -74,8 +77,16 @@ LSPConnection {
         // @TODO: What do we do before start / after stop? Errors?
         Log('LanguageServer.quark').info("Starting language server, inPort: % outPort:%", inPort, outPort);
         
-        socket = NetAddr("127.0.0.1", outPort);
-        thisProcess.openUDPPort(inPort, \raw);
+        3.do {
+            try {
+                socket = socket ?? { NetAddr("127.0.0.1", outPort) };
+                thisProcess.openUDPPort(inPort, \raw);            
+            } {
+                Log('LanguageServer.quark').warning("Opening LSP port failed. Probably this is because an old scsynth process is holding onto the port. Killing old servers and trying again...");
+                Server.killAll();
+                0.5.wait();
+            };
+        };
         
         thisProcess.addRawRecvFunc({
             |msg, time, replyAddr, recvPort|
@@ -113,6 +124,16 @@ LSPConnection {
             };
             
             providers[methodName] = provider;
+        }
+    }
+
+    request {
+        |methodName, params|
+        providers[methodName] !? {
+            |provider| 
+            ^provider.sendRequest(params)
+        } ?? {
+            Error("Can't do request, no providers for method '%'".format(methodName)).throw
         }
     }
     

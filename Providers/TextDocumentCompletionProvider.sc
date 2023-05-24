@@ -40,6 +40,7 @@ TextDocumentCompletionProvider : LSPProvider {
         LSPDatabase.getDocumentLine(doc, line) !? {
             |lineString|
             lineString = lineString[0..character];
+            
             ^LSPCompletionHandler.handleCompletion(lineString, triggerCharacters);
         } ?? {
             ^nil
