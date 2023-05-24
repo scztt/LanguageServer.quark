@@ -21,10 +21,21 @@ DocumentationSearchProvider : LSPProvider {
     
     onReceived {
         |method, params|
-        var path = params["searchString"].findHelpFile;
-        if (path.notNil) {
+        var brokenAction, urlString, url;
+        
+        brokenAction = brokenAction ? { |fragment|
+			var brokenUrl = URI.fromLocalPath( SCDoc.helpTargetDir++"/BrokenLink.html" );
+			brokenUrl.fragment = fragment;
+			brokenUrl;
+		};
+
+        urlString = params["searchString"].findHelpFile;
+        if (urlString.notNil) {
+		    url = URI(urlString);
+            url = SCDoc.prepareHelpForURL(url) ?? { brokenAction.(urlString) };
+
             ^(
-                uri: path,
+                uri: url.asString,
                 rootUri: SCDoc.helpTargetUrl
             )
         } {
