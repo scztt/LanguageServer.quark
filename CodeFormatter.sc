@@ -9,7 +9,7 @@ CodeFormatter {
     }
     
     isRunning {
-        ^inPipe.isOpen
+		^inPipe !? _.isOpen ?? false
     }
     
     init {
