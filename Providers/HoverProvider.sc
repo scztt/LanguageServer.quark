@@ -1,15 +1,31 @@
 HoverProvider : LSPProvider {
+  var allUserExtensionDocs; 
+
   *methodNames{ ^["textDocument/hover"] }
   *clientCapabilityName{ ^"textDocument.hover" }
   *serverCapabilityName{ ^"hoverProvider" }
   init{
     |clientCapabilities|
+
+    // make user's extension database, for quick indexing.
+    // it will scan through 
+    // - LanguageConfig.includeDefaultPaths
+    // - Platform.userExtensionDir
+    // - platform.systemExtensionDir
+    allUserExtensionDocs = Dictionary.newFrom(
+      SCDoc.prRescanHelpSourceDirs.collect{ |path| 
+        var p = PathName.new(PathName.new(path).parentPath.withoutTrailingSlash);
+        // the regex will extract only fileName(exclude `.` ) and use as a key.
+        // eg. `LanguageServer.quark` will become `LanguageServer`
+        [p.fileName.findRegexp("^([A-z0-9]+)\.?.*$")[1][1].asSymbol, p.fullPath]
+      }.flatten
+    );
   }
   options{ ^() }
 
   onReceived {
 		|method, params|
-    var result, body_desc, docTree, helpSourceRootPath; 
+    var result, body_desc, docTree, helpSourceCategoryChildPath; 
     var title, summary, categories, desc, all_desc, example_code;
     var doc = LSPDocument.findByQUuid(params["textDocument"]["uri"]);
 		var wordAtCursor = LSPDatabase.getDocumentWordAt(
@@ -18,19 +34,32 @@ HoverProvider : LSPProvider {
 			params["position"]["character"].asInteger
 		);
 
+    // this will match both "system documents" and "user extension documents".
     var isClass = SCDoc.documents.includesKey("Classes" +/+ wordAtCursor);
     var isGuides = SCDoc.documents.includesKey("Guides" +/+ wordAtCursor);
     var isOverviews = SCDoc.documents.includesKey("Overviews" +/+ wordAtCursor);
     var isReference = SCDoc.documents.includesKey("Reference" +/+ wordAtCursor);
 
-    if ( isClass.not && isGuides.not && isOverviews.not  && isReference.not , { ^nil });
+    // check if `wordAtCursor` is a member of `allUserExtensionDocs`
+    var isUserExtension = allUserExtensionDocs.includesKey(wordAtCursor.asSymbol);
 
-    if (isClass, { helpSourceRootPath = "Classes" }); 
-    if (isGuides, { helpSourceRootPath = "Guides" }); 
-    if (isOverviews, { helpSourceRootPath = "Overviews" }); 
-    if (isReference, { helpSourceRootPath = "Reference" }); 
+    if ( [isClass, isGuides, isOverviews, isReference, isUserExtension ].every(_.not) , { ^nil });
 
-    docTree = SCDoc.parseFileFull(SCDoc.helpSourceDir +/+ helpSourceRootPath +/+ wordAtCursor ++ ".schelp");
+    // extract helpSource child path.
+    if (isClass, { helpSourceCategoryChildPath = "Classes" }); 
+    if (isGuides, { helpSourceCategoryChildPath = "Guides" }); 
+    if (isOverviews, { helpSourceCategoryChildPath = "Overviews" }); 
+    if (isReference, { helpSourceCategoryChildPath = "Reference" }); 
+
+    // early return. for undocumented class case.
+    if (helpSourceCategoryChildPath == nil) { ^nil };
+
+    if (isUserExtension, { 
+      docTree = SCDoc.parseFileFull(allUserExtensionDocs[wordAtCursor.asSymbol] +/+ "HelpSource" +/+ helpSourceCategoryChildPath +/+ wordAtCursor  ++ ".schelp");
+    }, {
+      docTree = SCDoc.parseFileFull(SCDoc.helpSourceDir +/+ helpSourceCategoryChildPath +/+ wordAtCursor ++ ".schelp");
+    }); 
+
     docTree ?? { ^nil };
 
     docTree.children.do{ |t|
