@@ -155,22 +155,12 @@ HoverProvider : LSPProvider {
   // so it use `lspBaseDir` instead if `baseDir`.
   *prLinkTargetForInternalLinkForLSP { |linkBase, linkAnchor, originalLink|
 		var doc, result, lspBaseDir;
-    var userExtDoc;
 
 		if(linkBase.isEmpty) {
 			result = "";
 		} {
 			doc = SCDoc.documents[linkBase];
-      userExtDoc = HoverProvider.allUserExtensionDocs[doc !? {doc.title.asSymbol}];
-
-      // TODO: 
-      // - handle undocumented 
-      // - check if file .html is available.
-      if (( userExtDoc.notNil && doc.isUndocumentedClass.not ) , {
-        lspBaseDir = userExtDoc;
-      }, {
-        lspBaseDir = PathName.new(PathName.new(SCDoc.findHelpFile(linkBase)).parentPath.withoutTrailingSlash).parentPath;
-      });
+      lspBaseDir = PathName.new(PathName.new(URI.new(SCDoc.findHelpFile(linkBase)).asLocalPath).parentPath.withoutTrailingSlash).parentPath;
 
 			result = lspBaseDir +/+ linkBase;
 
