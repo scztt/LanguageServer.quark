@@ -227,9 +227,7 @@ HoverProvider : LSPProvider {
 				stream << this.htmlForLinkForLSP(node.text);
 			},
 			\CODEBLOCK, {
-				stream << "<textarea class='editor'>"
-				<< SCDocHTMLRenderer.escapeSpecialChars(node.text)
-				<< "</textarea>\n";
+				stream << format("\n ```supercollider \n%\n```", SCDocHTMLRenderer.escapeSpecialChars(node.text));
 			},
 			\CODE, {
 				stream << "<code>"
@@ -273,7 +271,7 @@ HoverProvider : LSPProvider {
 			},
 // Other stuff
 			\NOTE, {
-				stream << "<div class='note'><span class='notelabel'>NOTE:</span> ";
+        stream << "<div class='note'><span class='notelabel'>NOTE:</span> ";
 				noParBreak = true;
 				SCDocHTMLRenderer.renderChildrenForLSP(stream, node);
 				stream << "</div>";
