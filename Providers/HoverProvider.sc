@@ -1,5 +1,6 @@
 HoverProvider : LSPProvider {
-  classvar <allUserExtensionDocs; 
+  classvar <allUserExtensionDocs;
+  var streams, metadata, wordAtCursor;
 
   *methodNames{ ^["textDocument/hover"] }
   *clientCapabilityName{ ^"textDocument.hover" }
@@ -24,27 +25,44 @@ HoverProvider : LSPProvider {
   options{ ^() }
 
   onReceived {
-		|method, params|
-    var result, docTree, helpSourceCategoryChildPath, stream; 
-    var title, summary, categories, desc, all_desc, example_code;
+    |method, params|
+    var result, docNode, helpSourceCategoryChildPath;
+    var isDocumentedClass, isDocumentedGuides, isDocumentedOverviews, isDocumentedReference;
     var doc = LSPDocument.findByQUuid(params["textDocument"]["uri"]);
-		var wordAtCursor = LSPDatabase.getDocumentWordAt(
-			doc,
-			params["position"]["line"].asInteger,
-			params["position"]["character"].asInteger
-		);
+    var position = (
+      line: params["position"]["line"].asInteger,
+      character: params["position"]["character"].asInteger,
+    );
+
+    wordAtCursor = this.getDocumentWordAndParentAt(
+      doc,
+      position[\line],
+      position[\character]
+    );
+    wordAtCursor.remove(nil);
+    streams = (
+      class: CollStream(""),
+      cMethod: CollStream("")
+    );
+    metadata = (
+      title: "",
+      summary: "",
+      categories: "",
+      example_code: nil,
+      cMethodSignature: "" 
+    );
 
     // check if wordAtCursor is a documented class.
     // `SCDoc.documents` include both "system documents" and "user extension documents".
     // ? how can we figure out category folder without hard-coding ("Classes" or "Guides" or "Overviews", etc)
-    var isDocumentedClass = if (SCDoc.documents["Classes" +/+ wordAtCursor].isNil,{ false },{ SCDoc.documents["Classes" +/+ wordAtCursor].isUndocumentedClass.not });
-    var isDocumentedGuides = if (SCDoc.documents["Guides" +/+ wordAtCursor].isNil,{ false },{ SCDoc.documents["Guides" +/+ wordAtCursor].isUndocumentedClass.not });
-    var isDocumentedOverviews = if (SCDoc.documents["Overviews" +/+ wordAtCursor].isNil,{ false },{ SCDoc.documents["Overviews" +/+ wordAtCursor].isUndocumentedClass.not });
-    var isDocumentedReference = if (SCDoc.documents["Reference" +/+ wordAtCursor].isNil,{ false },{ SCDoc.documents["Reference" +/+ wordAtCursor].isUndocumentedClass.not });
+    isDocumentedClass = if (SCDoc.documents["Classes" +/+ wordAtCursor[0]].isNil,{ false },{ SCDoc.documents["Classes" +/+ wordAtCursor[0]].isUndocumentedClass.not });
+    isDocumentedGuides = if (SCDoc.documents["Guides" +/+ wordAtCursor[0]].isNil,{ false },{ SCDoc.documents["Guides" +/+ wordAtCursor[0]].isUndocumentedClass.not });
+    isDocumentedOverviews = if (SCDoc.documents["Overviews" +/+ wordAtCursor[0]].isNil,{ false },{ SCDoc.documents["Overviews" +/+ wordAtCursor[0]].isUndocumentedClass.not });
+    isDocumentedReference = if (SCDoc.documents["Reference" +/+ wordAtCursor[0]].isNil,{ false },{ SCDoc.documents["Reference" +/+ wordAtCursor[0]].isUndocumentedClass.not });
     
     // return nothing if wordAtCursor is not a ClassName, otherwise return "undocumented".
     if ([isDocumentedClass, isDocumentedGuides, isDocumentedOverviews, isDocumentedReference ].every(_.not) , { 
-      if ( wordAtCursor.asSymbol.isClassName, { ^( contents: ( kind: "markdown", value: "undocumented" )) },{ ^nil } ) 
+      if ( wordAtCursor[0].asSymbol.isClassName, { ^( contents: ( kind: "markdown", value: "undocumented" )) },{ ^nil } ) 
      });
 
     // extract helpSource child path.
@@ -55,58 +73,115 @@ HoverProvider : LSPProvider {
 
     // check if `wordAtCursor` is a member of `allUserExtensionDocs`
     // if so use different path from system extension
-    if (allUserExtensionDocs.includesKey(wordAtCursor.asSymbol), { 
-      var userExtPath = allUserExtensionDocs[wordAtCursor.asSymbol] +/+ "HelpSource" +/+ helpSourceCategoryChildPath;
-      docTree = SCDoc.parseFileFull(userExtPath +/+ wordAtCursor  ++ ".schelp");
+    if (allUserExtensionDocs.includesKey(wordAtCursor[0].asSymbol), { 
+      var userExtPath = allUserExtensionDocs[wordAtCursor[0].asSymbol] +/+ "HelpSource" +/+ helpSourceCategoryChildPath;
+      docNode = SCDoc.parseFileFull(userExtPath +/+ wordAtCursor[0]  ++ ".schelp");
     }, {
-      docTree = SCDoc.parseFileFull(SCDoc.helpSourceDir +/+ helpSourceCategoryChildPath +/+ wordAtCursor ++ ".schelp");
+      docNode = SCDoc.parseFileFull(SCDoc.helpSourceDir +/+ helpSourceCategoryChildPath +/+ wordAtCursor[0] ++ ".schelp");
     }); 
 
-    docTree ?? { ^nil };
+    docNode ?? { ^nil };
 
-    // initialized stream for rendering subtree (`\DESCRIPTION`)
-    stream = CollStream(""); 
-
-    docTree.children.do{ |t|
+    docNode.children.do{ |t|
       switch(t.id, 
         \HEADER, { t.children.do{ |tc| 
           switch(tc.id, 
-            \TITLE, { title = tc.text; },
-            \SUMMARY, { summary = tc.text; },
-            \CATEGORIES, { categories = tc.children.collect(_.text) },
+            \TITLE, { metadata[\title] = tc.text; },
+            \SUMMARY, { metadata[\summary] = tc.text; },
+            \CATEGORIES, { metadata[\categories] = tc.children.collect(_.text) },
           );
         }},
         \BODY, { t.children.do { |tc|
           switch(tc.id,
             \EXAMPLES, { tc.children.do { |exampleChild|
               switch(exampleChild.id, 
-                \CODEBLOCK, { example_code = exampleChild.text; },
+                \CODEBLOCK, { metadata[\example_code] = exampleChild.text; },
                 \PROSE, {},
               )
             }},
-            \DESCRIPTION, { tc.children.do { |descChild| 
-              descChild.children.collect { |c| 
-                SCDocHTMLRenderer.renderSubTreeForLSP(stream, c); 
-              };
-            }},
-          )
-        } }
-    );};
-    desc = format("## %\n*%*\n \n% \n\n",title,categories, summary);
-    desc = format("% ### Description:\n\n  % \n \n\n --- \n", desc, stream.collection);
-    example_code !? { desc = format("% ### Examples \n ```supercollider %  \n",desc, example_code); }
-    
-    ^(
-      contents: ( 
-        kind: "markdown", 
-        value: desc 
-      )
-    )
+            \DESCRIPTION, { 
+              if (wordAtCursor.size == 1, { 
+                SCDocRendererForLSP.renderSubTreeForLSP(streams[\class], tc);
+              }); 
+            },
+            \CLASSMETHODS, {  
+              if (wordAtCursor.size == 2, { 
+                metadata[\cMethodSignature] = SCDocRendererForLSP.getClassMethodSignatureString(wordAtCursor);
+                SCDocRendererForLSP.renderMethodDoc(streams[\cMethod], tc, wordAtCursor[1], \CMETHOD);             
+              }); 
+            },
+            \INSTANCEMETHODS, { 
+                // TODO: 
+            },
+          );
+        }};
+      );};
+
+    ^(contents: ( kind: "markdown", value: this.getHoverDescString ))
 	}
+
+  // this grabbed from `LSPDatabase.getDocumentWordAt` with modifications, instead of return only `wordAtCursor`
+  // it'll return `parent` up to cursor position as well. 
+  // eg. when hover at "someting" in "LSPDocument.findMethod.something.anotherthing"
+  // it will return [LSPDocument, findMethod, something]
+  // useful for rendering Class method documents.
+  // it might be replaced/removed in the future when implementing an AST
+  getDocumentWordAndParentAt {
+    |doc, line, character|
+    var lineString = LSPDatabase.getDocumentLine(doc, line);
+    var start = character;
+    var word;
+    
+    Log('LanguageServer.quark').info("Searching line for a word: '%' at %:%", lineString, line, character);
+    
+    while {
+        (start >= 0) and: { ((lineString[start] !? _.isAlphaNum ?? true)  or: { lineString[start] == $_ }) }
+    } {
+        start = start - 1
+    };
+    start = start + 1;
+    
+    word = lineString.findRegexpAt("[A-Za-z][\\w]*", start);
+    if (word.size > 0) {
+        // return flatten array of parents(token)
+        // eg. when hovering "includeKeys" in "SCDoc.documents.includeKeys"
+        // it'll be [ [[nil, SCDoc ], documents], includeKeys ]
+        // and will be flatten to [nil, SCDoc, documents, includeKeys]
+        ^[ if (lineString[start - 1] == $., {this.getDocumentWordAndParentAt(doc, line, start - 2)}), word[0].asSymbol ].flat
+    } {
+        ^nil
+    }
+  }
+
+  getHoverDescString {
+    var desc;
+
+    // CLASS METHOD DOC
+    // render "undocumented" if stream is empty.
+    // size = 2, eg. [SCDoc, documents]
+    if (wordAtCursor.size == 2, {
+        desc = streams[\cMethod].collection !? { 
+          format("(class method) \n```supercollider \n%\n\n```\n\n --- \n\n%\n",
+              metadata[\cMethodSignature], 
+              if (streams[\cMethod].collection == "", { format("*undocumented*") }, { streams[\cMethod].collection } 
+          )) 
+        };
+      });
+  
+    // CLASS DOC
+    // size = 1, eg. [SCDoc] 
+    if (wordAtCursor.size == 1, {
+      desc = format("## %\n*%*\n \n% \n\n % \n \n\n --- \n",metadata[\title],metadata[\categories], metadata[\summary], streams[\class].collection);
+      metadata[\example_code] !? { desc = format("% ### Examples \n ```supercollider %  \n```\n\n",desc, metadata[\example_code]); };
+    });
+
+    ^desc
+  }
 }
 
 // mostly from official `SCDocRenderer.sc` with slighly modifications (notated by suffix eg. `ForLSP` or `lsp`).
-+SCDocHTMLRenderer {
+SCDocRendererForLSP : SCDocHTMLRenderer {
+  classvar lspBaseDir;
 
   // grabbed from `SCDocHTMLRenderer.htmlForLink`
   // returns: the <a> tag HTML representation of the original `link`
@@ -140,7 +215,7 @@ HoverProvider : LSPProvider {
 		} {
 		    // Process a link that goes to a URL within the help system
 			linkText = SCDocHTMLRenderer.prLinkTextForInternalLink(linkBase, linkAnchor, linkText);
-			linkTarget = SCDocHTMLRenderer.prLinkTargetForInternalLinkForLSP(linkBase, linkAnchor, link);
+			linkTarget = this.prLinkTargetForInternalLinkForLSP(linkBase, linkAnchor, link);
 		};
 
 		// Escape special characters in the link text if requested
@@ -154,7 +229,7 @@ HoverProvider : LSPProvider {
   // hence it'll throw an error for `+/+` (because `BaseDir` initialized in the method for ScIDE) (see https://github.com/supercollider/supercollider/blob/ef627ce2c564fe323125234e4374c9c4b0fc7f1d/SCClassLibrary/SCDoc/SCDocRenderer.sc#L62)
   // so it use `lspBaseDir` instead if `baseDir`.
   *prLinkTargetForInternalLinkForLSP { |linkBase, linkAnchor, originalLink|
-		var doc, result, lspBaseDir;
+		var doc, result;
 
 		if(linkBase.isEmpty) {
 			result = "";
@@ -185,13 +260,12 @@ HoverProvider : LSPProvider {
 			};
 		};
 
-    ^result
-
-		// if(linkAnchor.isEmpty) {
-		// 	^result
-		// } {
-		// 	^result ++ "#" ++ SCDocHTMLRenderer.escapeSpacesInAnchor(linkAnchor);
-		// }
+    // ^result
+		if(linkAnchor.isEmpty) {
+			^result
+		} {
+			^result ++ "#" ++ SCDocHTMLRenderer.escapeSpacesInAnchor(linkAnchor);
+		}
 	}
 
   // grabbed from `SCDocHTMLRenderer.renderChildren`
@@ -217,17 +291,20 @@ HoverProvider : LSPProvider {
 				} {
 					stream << "\n<p>";
 				};
-				SCDocHTMLRenderer.renderChildrenForLSP(stream, node);
+				this.renderChildrenForLSP(stream, node);
 			},
 			\NL, { }, 
 			\TEXT, {
+				stream << SCDocHTMLRenderer.escapeSpecialChars(node.text);
+			},
+			\STRING, {
 				stream << SCDocHTMLRenderer.escapeSpecialChars(node.text);
 			},
 			\LINK, {
 				stream << this.htmlForLinkForLSP(node.text);
 			},
 			\CODEBLOCK, {
-				stream << format("\n ```supercollider \n%\n```", SCDocHTMLRenderer.escapeSpecialChars(node.text));
+				stream << format("\n\n```supercollider \n%\n\n```\n\n", SCDocHTMLRenderer.escapeSpecialChars(node.text));
 			},
 			\CODE, {
 				stream << "<code>"
@@ -271,15 +348,15 @@ HoverProvider : LSPProvider {
 			},
 // Other stuff
 			\NOTE, {
-        stream << "<div class='note'><span class='notelabel'>NOTE:</span> ";
+                stream << "\n<u>NOTE: ";
 				noParBreak = true;
-				SCDocHTMLRenderer.renderChildrenForLSP(stream, node);
-				stream << "</div>";
+				this.renderChildrenForLSP(stream, node);
+				stream << "</u>";
 			},
 			\WARNING, {
 				stream << "<div class='warning'><span class='warninglabel'>WARNING:</span> ";
 				noParBreak = true;
-				SCDocHTMLRenderer.renderChildrenForLSP(stream, node);
+				this.renderChildrenForLSP(stream, node);
 				stream << "</div>";
 			},
 			\FOOTNOTE, {
@@ -300,81 +377,88 @@ HoverProvider : LSPProvider {
 // Lists and tree
 			\LIST, {
 				stream << "<ul>\n";
-				SCDocHTMLRenderer.renderChildrenForLSP(stream, node);
+				this.renderChildrenForLSP(stream, node);
 				stream << "</ul>\n";
 			},
 			\TREE, {
 				stream << "<ul class='tree'>\n";
-				SCDocHTMLRenderer.renderChildrenForLSP(stream, node);
+				this.renderChildrenForLSP(stream, node);
 				stream << "</ul>\n";
 			},
 			\NUMBEREDLIST, {
 				stream << "<ol>\n";
-				SCDocHTMLRenderer.renderChildrenForLSP(stream, node);
+				this.renderChildrenForLSP(stream, node);
 				stream << "</ol>\n";
 			},
 			\ITEM, { // for LIST, TREE and NUMBEREDLIST
 				stream << "<li>";
 				noParBreak = true;
-				SCDocHTMLRenderer.renderChildrenForLSP(stream, node);
+				this.renderChildrenForLSP(stream, node);
 			},
 // Definitionlist
 			\DEFINITIONLIST, {
 				stream << "<dl>\n";
-				SCDocHTMLRenderer.renderChildrenForLSP(stream, node);
+				this.renderChildrenForLSP(stream, node);
 				stream << "</dl>\n";
 			},
 			\DEFLISTITEM, {
-				SCDocHTMLRenderer.renderChildrenForLSP(stream, node);
+				this.renderChildrenForLSP(stream, node);
 			},
 			\TERM, {
-				stream << "<dt>";
+				stream << "<dt><u>";
 				noParBreak = true;
-				SCDocHTMLRenderer.renderChildrenForLSP(stream, node);
+				this.renderChildrenForLSP(stream, node);
+        stream << "</u>"; 
 			},
 			\DEFINITION, {
 				stream << "<dd>";
 				noParBreak = true;
-				SCDocHTMLRenderer.renderChildrenForLSP(stream, node);
+				this.renderChildrenForLSP(stream, node);
 			},
 // Tables
 			\TABLE, {
 				stream << "<table>\n";
-				SCDocHTMLRenderer.renderChildrenForLSP(stream, node);
+				this.renderChildrenForLSP(stream, node);
 				stream << "</table>\n";
 			},
 			\TABROW, {
 				stream << "<tr>";
-				SCDocHTMLRenderer.renderChildrenForLSP(stream, node);
+				this.renderChildrenForLSP(stream, node);
 			},
 			\TABCOL, {
 				stream << "<td>";
 				noParBreak = true;
-				SCDocHTMLRenderer.renderChildrenForLSP(stream, node);
+				this.renderChildrenForLSP(stream, node);
 			},
 // Methods
 			\CMETHOD, {
-				SCDocHTMLRenderer.renderMethod(
-					stream, node,
-					\classMethod,
-					currentClass !? {currentClass.class},
-					currentImplClass !? {currentImplClass.class}
-				);
+				// this.renderMethodForLSP(
+				// 	stream, node,
+				// 	\classMethod,
+				// 	currentClass !? {currentClass.class},
+				// 	currentImplClass !? {currentImplClass.class}
+				// );
 			},
 			\IMETHOD, {
-				SCDocHTMLRenderer.renderMethod(
-					stream, node,
-					\instanceMethod,
-					currentClass,
-					currentImplClass
-				);
+				// this.renderMethodForLSP(
+				// 	stream, node,
+				// 	\instanceMethod,
+				// 	currentClass,
+				// 	currentImplClass
+				// );
 			},
 			\METHOD, {
-				SCDocHTMLRenderer.renderMethod(
-					stream, node,
-					\genericMethod,
-					nil, nil
-				);
+				// this.renderMethodForLSP(
+				// 	stream, node,
+				// 	\genericMethod,
+				// 	nil, nil
+				// );
+			},
+      \METHODBODY, {
+				// this.renderChildrenForLSP(stream, node);
+			},
+      \METHODNAMES, {
+				// this.renderChildrenForLSP(stream, node);
 			},
 			\CPRIVATE, {},
 			\IPRIVATE, {},
@@ -382,7 +466,8 @@ HoverProvider : LSPProvider {
 			\CCOPYMETHOD, {},
 			\ICOPYMETHOD, {},
 			\ARGUMENTS, {
-				stream << "<h4>Arguments:</h4>\n<table class='arguments'>\n";
+        stream << "<h4>Arguments:</h4>\n\n<tbody><table>";
+        stream << "\n\n";
 				currArg = 0;
 				if(currentMethod.notNil and: {node.children.size < (currentNArgs-1)}) {
 					"SCDoc: In %\n"
@@ -394,11 +479,16 @@ HoverProvider : LSPProvider {
 						node.children.size,
 					).warn;
 				};
-				SCDocHTMLRenderer.renderChildrenForLSP(stream, node);
-				stream << "</table>";
+        
+				this.renderChildrenForLSP(stream, node);
+        stream << "</tbody></table>";
 			},
 			\ARGUMENT, {
 				currArg = currArg + 1;
+
+                // style: vertical-align: top; not working
+                // since any styles except for `color` and `background-color` will be sanitized. 
+                // see: https://github.com/microsoft/vscode/blob/6d2920473c6f13759c978dd89104c4270a83422d/src/vs/base/browser/markdownRenderer.ts#L309
 				stream << "<tr><td class='argumentname'>";
 				if(node.text.isNil) {
 					currentMethod !? {
@@ -406,11 +496,11 @@ HoverProvider : LSPProvider {
 							stream << "... ";
 						};
 						stream << if(currArg < currentMethod.argNames.size) {
-							if(currArg > minArgs) {
-								"("++currentMethod.argNames[currArg]++")";
-							} {
-								currentMethod.argNames[currArg];
-							}
+							// if(currArg > minArgs) {
+							// 	"("++currentMethod.argNames[currArg]++")";
+							// } {
+							currentMethod.argNames[currArg];
+							// }
 						} {
 							"(arg"++currArg++")" // excessive arg
 						};
@@ -434,57 +524,57 @@ HoverProvider : LSPProvider {
 								).warn;
 							};
 						};
-						if(currArg > minArgs) {
-							"("++node.text++")";
-						} {
-							node.text;
-						};
-					} {
-						"("++node.text++")" // excessive arg
-					};
-				};
+						// if(currArg > minArgs) {
+						// 	"("++node.text++")";
+						// } {
+              "\n\n`" ++	node.text ++ "`\n\n";
+              // };
+            } {
+              "("++node.text++")" // excessive arg
+            };
+          };
 				stream << "<td class='argumentdesc'>";
-				SCDocHTMLRenderer.renderChildrenForLSP(stream, node);
+				this.renderChildrenForLSP(stream, node);
 			},
 			\RETURNS, {
 				stream << "<h4>Returns:</h4>\n<div class='returnvalue'>";
-				SCDocHTMLRenderer.renderChildrenForLSP(stream, node);
+				this.renderChildrenForLSP(stream, node);
 				stream << "</div>";
 
 			},
 			\DISCUSSION, {
 				stream << "<h4>Discussion:</h4>\n";
-				SCDocHTMLRenderer.renderChildrenForLSP(stream, node);
+				this.renderChildrenForLSP(stream, node);
 			},
 // Sections
 			\CLASSMETHODS, {
 				if(node.notPrivOnly) {
 					stream << "<h2><a class='anchor' name='classmethods'>Class Methods</a></h2>\n";
 				};
-				SCDocHTMLRenderer.renderChildrenForLSP(stream, node);
+				this.renderChildrenForLSP(stream, node);
 			},
 			\INSTANCEMETHODS, {
 				if(node.notPrivOnly) {
 					stream << "<h2><a class='anchor' name='instancemethods'>Instance Methods</a></h2>\n";
 				};
-				SCDocHTMLRenderer.renderChildrenForLSP(stream, node);
+				this.renderChildrenForLSP(stream, node);
 			},
 			\DESCRIPTION, {
 				stream << "<h2><a class='anchor' name='description'>Description</a></h2>\n";
-				SCDocHTMLRenderer.renderChildrenForLSP(stream, node);
+				this.renderChildrenForLSP(stream, node);
 			},
 			\EXAMPLES, {
 				stream << "<h2><a class='anchor' name='examples'>Examples</a></h2>\n";
-				SCDocHTMLRenderer.renderChildrenForLSP(stream, node);
+				this.renderChildrenForLSP(stream, node);
 			},
 			\SECTION, {
 				stream << "<h2><a class='anchor' name='" << SCDocHTMLRenderer.escapeSpacesInAnchor(node.text)
 				<< "'>" << SCDocHTMLRenderer.escapeSpecialChars(node.text) << "</a></h2>\n";
 				if(node.makeDiv.isNil) {
-					SCDocHTMLRenderer.renderChildrenForLSP(stream, node);
+					this.renderChildrenForLSP(stream, node);
 				} {
 					stream << "<div id='" << node.makeDiv << "'>";
-					SCDocHTMLRenderer.renderChildrenForLSP(stream, node);
+					this.renderChildrenForLSP(stream, node);
 					stream << "</div>";
 				};
 			},
@@ -492,18 +582,75 @@ HoverProvider : LSPProvider {
 				stream << "<h3><a class='anchor' name='" << SCDocHTMLRenderer.escapeSpacesInAnchor(node.text)
 				<< "'>" << SCDocHTMLRenderer.escapeSpecialChars(node.text) << "</a></h3>\n";
 				if(node.makeDiv.isNil) {
-					SCDocHTMLRenderer.renderChildrenForLSP(stream, node);
+					this.renderChildrenForLSP(stream, node);
 				} {
 					stream << "<div id='" << node.makeDiv << "'>";
-					SCDocHTMLRenderer.renderChildrenForLSP(stream, node);
+					this.renderChildrenForLSP(stream, node);
 					stream << "</div>";
 				};
 			},
 			{
 				"SCDoc: In %\n"
 				"  Unknown SCDocNode id: %".format(currDoc.fullPath, node.id).warn;
-				SCDocHTMLRenderer.renderChildrenForLSP(stream, node);
+				this.renderChildrenForLSP(stream, node);
 			}
 		);
 	}
+
+  // handle streaming matched method's informations.
+  *renderMethodDoc{ | methodStream, node, hoverMethodName, methodType |
+    node.children.do { |methodChild|  
+      switch(methodChild.id, 
+        \SUBSECTION, { this.renderMethodDoc(methodStream, methodChild, hoverMethodName, methodType) },
+        { methodChild.children.do({ |methodChildChild| 
+            var method = node.findChild(methodType);
+            var methodName = methodChild.findChild("METHODNAMES".asSymbol);
+            var methodBody = methodChild.findChild("METHODBODY".asSymbol);
+      
+            method !? methodName !? { 
+              var meth = methodChildChild.children.detect({ |mc| mc.text == hoverMethodName.asString; });
+              meth !? { this.renderChildrenForLSP(methodStream, methodBody); };
+            }
+          });
+        }
+      );
+    }
+  }
+
+  // get class signature string with default args values.
+  // eg. `SinOsc.ar(freq: 440.0, phase: 0.0, mul: 1.0, add: 0.0)`
+  *getClassMethodSignatureString { | wordAtCursor |
+    var m, klass, sig;
+    klass = wordAtCursor[0].asClass;
+    m = klass !? klass.class.findRespondingMethodFor(wordAtCursor[1]);
+    m !? { sig = m.argNames !? {  this.makeArgStringForLSP(m)} ?? {"value"}; };
+    sig = klass.asString ++ "." ++ wordAtCursor[1].asString ++ sig;
+    ^sig
+  }
+
+  *makeArgStringForLSP {|m, par=true|
+    var res = "";
+    var value;
+    var l = m.argNames;
+    var last = l.size-1;
+    l.do {|a,i|
+        if (i>0) { //skip 'this' (first arg)
+            if(i==last and: {m.varArgs}) {
+                res = res ++ "... " ++ a;
+            } {
+                if (i>1) { res = res ++ ", " };
+                res = res ++ a;
+                (value = m.prototypeFrame[i]) !? {
+                    value = if(value.class===Float) { value.asString } { value.cs };
+                    res = res ++ ": " ++ value;
+                };
+            };
+            res = res;
+        };
+    };
+    if (res.notEmpty and: par) {
+        ^("("++res++")");
+    };
+    ^res;
+  }
 }
