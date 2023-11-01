@@ -37,6 +37,7 @@ EvaluateProvider : LSPProvider {
 
 		result = ();
 
+		source = thisProcess.interpreter.preProcessor.value(source) ?? { source };
 		function = source.compile();
 		if (function.isNil) {
 			result[\compileError] = "Compile error?"
@@ -53,7 +54,7 @@ EvaluateProvider : LSPProvider {
 			} {
 				|error|
 				result[\error] = error.errorString;
-				
+
 				if (postResult) {
 					error.reportError
 				}
