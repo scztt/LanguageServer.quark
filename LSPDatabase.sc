@@ -249,6 +249,10 @@ LSPDatabase {
         |method, sortByClassHierarchy=false|
         var sortText;
         
+        method ?? {
+            ^nil  
+        };
+        
         if (sortByClassHierarchy) {
             sortText = (9 - method.ownerClass.superclasses.size).asString.zeroPad()
         } {
