@@ -2,6 +2,7 @@ LSPConnection {
     classvar <connection;
     classvar <providers, <>preprocessor;
     classvar readyMsg = "***LSP READY***";
+    classvar <handlerThread;
     
     var <>inPort, <>outPort;
     var socket;
@@ -33,6 +34,14 @@ LSPConnection {
         
         settings = this.envirSettings();
         
+        handlerThread = Routine({
+            |f|
+            Environment().push;
+            inf.do {
+                f = f.value.yield; 
+            }
+        });
+        
         if (settings[\enabled].asBoolean) {
             StartUp.add({
                 connection = LSPConnection().start;
@@ -62,7 +71,7 @@ LSPConnection {
         outPort = settings[\outPort];
         outstandingRequests = ();
         workspaceFolders = List();
-
+        
         Log('LanguageServer.quark').level = settings[\logLevel];
         
         this.addDependant({
@@ -90,7 +99,7 @@ LSPConnection {
         
         thisProcess.addRawRecvFunc({
             |msg, time, replyAddr, recvPort|
-            this.prOnReceived(time, replyAddr, msg)
+            this.prOnReceived(time, replyAddr, msg);
         });
         
         // @TODO Is this the only "default" provider we want?
@@ -126,7 +135,7 @@ LSPConnection {
             providers[methodName] = provider;
         }
     }
-
+    
     request {
         |methodName, params|
         providers[methodName] !? {
