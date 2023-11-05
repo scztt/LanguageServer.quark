@@ -27,6 +27,11 @@ Document {
     mouseDownAction { ^this.subclassResponsibility(thisMethod) }
     mouseDownAction_{ ^this.subclassResponsibility(thisMethod) }
     
+    *open { 
+        |path, selectionStart=0, selectionLength=0, envir| 
+        ^implementingClass.open(path, selectionStart=0, selectionLength=0, envir) 
+    }
+
     open { 
         |path, selectionStart=0, selectionLength=0, envir| 
         ^implementingClass.open(path, selectionStart=0, selectionLength=0, envir) 
