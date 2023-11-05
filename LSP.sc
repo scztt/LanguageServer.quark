@@ -307,7 +307,7 @@ LSPConnection {
         var message;
         
         try {
-            message = dict.toJSON();
+            message = dict.lsp_toJSON();
         } {
             |e|
             // Since JSON encoding JUST failed, lets avoid doing it again...
@@ -348,7 +348,7 @@ LSPConnection {
 }
 
 NilResponse {
-    toJSON {
+    lsp_toJSON {
         ^"null"
     }
     // Placeholder for nil responses, since nil signifies an empty slot in a dictionary.
