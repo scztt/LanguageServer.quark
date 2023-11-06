@@ -1,5 +1,5 @@
 
-LSP_JSON {
+JSON {
     classvar <tab,<nl;
     
     *initClass {
@@ -8,7 +8,7 @@ LSP_JSON {
     }
     *stringify { arg obj, force=false;
         var out;
-        out = try { obj.lsp_toJSON } {
+        out = try { obj.toJSON } {
             ("No JSON conversion for object" + obj).warn;
         };
         
@@ -16,7 +16,7 @@ LSP_JSON {
     }
 }
 
-LSP_JSONEncodeError : Error {
+JSONEncodeError : Error {
     var <>type;
     
     *new {
@@ -26,36 +26,36 @@ LSP_JSONEncodeError : Error {
     }
 }
 
-+Object { lsp_toJSON { LSP_JSONEncodeError(this).throw }}
++Object { toJSON { JSONEncodeError(this).throw }}
 
-+Nil { lsp_toJSON { ^"null" }}
-+True { lsp_toJSON { ^"true" }}
-+False { lsp_toJSON { ^"false" }}
++Nil { toJSON { ^"null" }}
++True { toJSON { ^"true" }}
++False { toJSON { ^"false" }}
 
 +String {
-    lsp_toJSON {
-        ^this.asCompileString.replace("\n", LSP_JSON.nl).replace("\t", LSP_JSON.tab);
+    toJSON {
+        ^this.asCompileString.replace("\n", JSON.nl).replace("\t", JSON.tab);
     }
 }
 
 +Symbol {
-    lsp_toJSON {
-        ^LSP_JSON.stringify(this.asString)
+    toJSON {
+        ^JSON.stringify(this.asString)
     }
 }
 
 +Dictionary {
-    lsp_toJSON {
+    toJSON {
         var out = List.new;
         this.keysValuesDo({ arg key, value;
-            out.add( key.asString.asCompileString ++ ":" + LSP_JSON.stringify(value) );
+            out.add( key.asString.asCompileString ++ ":" + JSON.stringify(value) );
         });
         ^("{" ++ (out.join(",")) ++ "}");
     }
 }
 
 +Number {
-    lsp_toJSON {
+    toJSON {
         if(this.isNaN, {
             ^"NaN"
         });
@@ -70,9 +70,9 @@ LSP_JSONEncodeError : Error {
 }
 
 +SequenceableCollection {
-    lsp_toJSON {
+    toJSON {
         ^"[" ++ this.collect({ arg sub;
-            LSP_JSON.stringify(sub)
+            JSON.stringify(sub)
         }).join(",")
         ++ "]";
     }
