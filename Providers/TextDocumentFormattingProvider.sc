@@ -10,8 +10,10 @@ TextDocumentFormattingProvider : LSPProvider {
     *serverCapabilityName { ^"documentFormattingProvider" }
     
     *initClass {
-        if (formatterEnabled) {
-            formatter = CodeFormatter();
+        StartUp.add {
+            if (formatterEnabled) {
+                formatter = CodeFormatter();
+            }
         }
     }
     
