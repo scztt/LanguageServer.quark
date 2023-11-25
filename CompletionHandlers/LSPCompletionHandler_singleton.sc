@@ -77,7 +77,14 @@
 
 +Ndef {
     *isDefClass { ^true }
-        *prGetNames { ^this.all[Server.default.name].keys } // @TODO Search across all servers here?
+    *prGetNames {
+        var proxyspace = this.all[Server.default.name];
+        ^if(proxyspace.notNil) {
+            proxyspace.keys
+        } {
+            Set.new
+        }
+    } // @TODO Search across all servers here?
 }
 
 +Pdef { *isDefClass { ^true } }
