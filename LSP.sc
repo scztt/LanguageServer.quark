@@ -277,12 +277,16 @@ LSPConnection {
     prHandleResponse {
         |id, result|
         
-        var response = (
-            id: id,
-            result: result ?? { NilResponse() }
-        );
-        
-        this.prSendMessage(response);
+        // Don't sent empty messages as this produces response
+        // validation errors in some LSP clients (neovim).
+        if (id.notNil or: { result.notNil } ) {
+            var response = (
+                id: id,
+                result: result ?? { NilResponse() }
+            );
+            
+            this.prSendMessage(response);
+        }
     }
     
     prHandleRequest {
