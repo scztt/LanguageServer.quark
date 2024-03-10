@@ -265,7 +265,7 @@ LSPDatabase {
                 detail: 			LSPDatabase.methodArgString(method),
                 description: 		method.ownerClass.name.asString
             ),
-            kind: 1, 				// CompletionItemKind.Method
+            kind: 2, 				// CompletionItemKind.Method
             // deprecated: false,	// mark this as deprecated - no way to use this?
             // detail:				// @TODO: additional detail
             // documentation: 		// @TODO: method documentation
