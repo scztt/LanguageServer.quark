@@ -38,7 +38,6 @@ SignatureHelpProvider : LSPProvider {
                 ownerClass = methodName !? _.asSymbol !? _.asClass !? _.class;
                 
                 methodName !? _.asSymbol !? _.asClass !? _.class
-                    !? _.postln
                     !? {
                         |classes|
                         classes = [classes] ++ classes.superclasses;
