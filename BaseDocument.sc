@@ -4,7 +4,7 @@
 // Consider this entire class a big @TODO - any uncommented implementations
 // are currently being used by the LSP implementation.
 //
-Document {
+BaseDocument {
     classvar <dir="", <allDocuments, <>current;
     classvar <globalKeyDownAction, <globalKeyUpAction, <>initAction;
     classvar <>autoRun = true;

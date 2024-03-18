@@ -20,7 +20,7 @@
 // @TODO `current` doesn't make sense for LSP? Move to ScIDEDocument and respond nil in base class?
 // @TODO Allow LSPDocument to provide CodeLens's, so these can be specified in sclang for cool clickable inline actions?
 
-LSPDocument : Document {    
+LSPDocument : BaseDocument {
     // Primary LSP properties
     var <>languageId, <version;
     
@@ -31,7 +31,7 @@ LSPDocument : Document {
     
     *initClass{
         asyncActions = IdentityDictionary.new;
-        Document.implementingClass = LSPDocument;
+        BaseDocument.implementingClass = LSPDocument;
     }
     
     *new {
