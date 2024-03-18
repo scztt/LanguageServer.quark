@@ -47,6 +47,9 @@ ExecuteCommandProvider : LSPProvider {
             'supercollider.internal.dumpNodeTreeWithControls': {
                 Server.default.queryAllNodes(true)
             },
+            'supercollider.internal.showTree': {
+                Server.default.plotTree()
+            },
             'supercollider.internal.plotTree': {
                 Server.default.plotTree()
             },
