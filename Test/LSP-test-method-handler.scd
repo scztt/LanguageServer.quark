@@ -12,6 +12,11 @@ UnitTest2("methodHandler", {
         );
         
         test.equals(
+            handler.validatePrefix("(variable", "."), "variable",
+            "Valid variable name"
+        );
+
+        test.equals(
             handler.validatePrefix("   variable", "."), "variable",
             "Valid variable name"
         );
@@ -91,4 +96,4 @@ UnitTest2("methodHandler", {
             );
         });
     })
-}
+}).runOrAdd;
