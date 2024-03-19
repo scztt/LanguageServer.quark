@@ -19,32 +19,26 @@
                 var results;
                 
                 // @TODO Matching from current environment - this is probably as good as we can do, right?
-                results = currentEnvironment.keys.collect(_.asString);
-                
-                if (completion.size > 0) {
-                    results = results.select({ |k| k.beginsWith(completion) })
-                };
+                results = currentEnvironment.keys;
                 
                 // @TODO Move dictionary constricture to LSPDatabase?
-                results = results.asArray.sort.collect({
+                results = results.asArray.collect({
                     |name|
+                    var nameString = name.asString;
                     (
-                        label: 			name,
-                        filterText: 	name,
-                        insertText:		"%$0".format(name),
+                        label: 			"~" ++ nameString,
+                        insertText:		"%$0".format(nameString),
+                        filterText:     nameString,
                         insertTextFormat: 2, // Snippet,
-                        
-                        // @TODO Add documentation and detail
-                        // detail:			nil,
-                        // documentation: (
-                        // 	kind: 		"markdown",
-                        // 	value:		LSPDatabase.methodDocumentationString(method)
-                        // )
+                        labelDetails:	(
+                            detail: "   %".format(currentEnvironment[name]),
+                        ),
+                        kind: 			6 // CompletionItemKind.Variable
                     )
                 });
                 
                 if (results.notEmpty) {
-                    provideCompletionsFunc.(results, true);
+                    provideCompletionsFunc.(results, false);
                 }
             }
         )

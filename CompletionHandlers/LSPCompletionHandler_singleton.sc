@@ -31,40 +31,31 @@
                 |prefixClass, trigger, completion, provideCompletionsFunc|
                 var results, defNames;
                 
-                defNames = prefixClass.prGetNames.asArray.sort;
-                defNames = defNames.collect({ |name| "\\" ++ name.asString });
-                
-                Log('LanguageServer.quark').info("Starting with defs: %", defNames);
-                
-                // defNames = defNames.select({
-                // 	|name|
-                // 	name.asString.beginsWith(completion)
-                // });
-                
-                Log('LanguageServer.quark').info("Filtered based on % to: %", completion, defNames);
+                defNames = prefixClass.prGetNames.asArray;
                 
                 results = defNames.collectAs({
                     |name|
+                    var shouldQuote = matchRegexp("\\\\W", name.asString);
+                    
+                    shouldQuote.if({
+                        name = "'" ++ name ++ "'"
+                    }, {
+                        name = "\\" ++ name
+                    });
+                    
+                    name = name.asString;
                     (
                         label: 			name,
-                        filterText: 	name,
-                        insertText:		name,
+                        insertText:		"%$0".format(name),
                         insertTextFormat: 2, // Snippet,
                         labelDetails:	(
-                            detail: "%(%)".format(prefixClass.name, name),
+                            detail: "  %(%)".format(prefixClass.name, name),
                         ),
-                        kind: 			2, // ??
-                        
-                        // @TODO Add documentation and detail
-                        // detail:			nil,
-                        // documentation: (
-                        // 	kind: 		"markdown",
-                        // 	value:		LSPDatabase.methodDocumentationString(method)
-                        // )
+                        kind: 			6 // CompletionItemKind.Variable
                     )
                 }, Array);
                 
-                provideCompletionsFunc.value(results, true);
+                provideCompletionsFunc.value(results, false);
             }
         )
     }
@@ -72,19 +63,19 @@
 
 +Object  {
     *isDefClass { ^false }
-        *prGetNames { ^this.all.keys } // this is valid for MOST def classes....
+        *prGetNames { ^this.all !? _.keys ?? {[]} } // this is valid for MOST def classes....
 }
 
 +Ndef {
     *isDefClass { ^true }
-    *prGetNames {
-        var proxyspace = this.all[Server.default.name];
-        ^if(proxyspace.notNil) {
-            proxyspace.keys
-        } {
-            Set.new
-        }
-    } // @TODO Search across all servers here?
+        *prGetNames {
+            var proxyspace = this.all[Server.default.name];
+            ^if(proxyspace.notNil) {
+                proxyspace.keys
+            } {
+                Set.new
+            }
+        } // @TODO Search across all servers here?
 }
 
 +Pdef { *isDefClass { ^true } }
