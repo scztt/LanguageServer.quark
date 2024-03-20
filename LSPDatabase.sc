@@ -6,9 +6,11 @@
 LSPDatabase {
     classvar allMethodNames, allMethods, allClasses, allMethodsByName, methodLocations;
     classvar classSymbols, methodSymbols, allSymbolObjects;
+	classvar classDocs;
     
     *initClass {
         methodLocations = ();
+		classDocs = Dictionary.new(100);
     }
     
     *methodSortFunc {
@@ -182,10 +184,30 @@ LSPDatabase {
             }).join(", ")
         )
     }
-    
-    *methodDocumentationString {
-        |method|
-    }
+
+	*classDocString {
+		|class|
+		^classDocs.atFail(class.name,
+			{ 
+				var stream, doc, node;
+				doc = SCDoc.documents["Classes/"++class.name];
+				try {
+					node = SCDoc.parseDoc(doc);
+				} {
+					classDocs.put(class.name, "");
+					^"" 
+				};
+				//try {
+					stream = CollStream("");
+					LSPSCDocMarkdownRenderer.renderOnStream(stream, doc, node);
+					classDocs.put(class.name, stream.collection);
+					^stream.collection;
+				//} {
+				//    ^""
+				//}
+			}
+		);
+	}
     
     *findDefinitions {
         |word|
@@ -247,7 +269,7 @@ LSPDatabase {
     
     *makeMethodCompletion {
         |method, sortByClassHierarchy=false|
-        var sortText;
+        var sortText, methodDocs;
         
         method ?? {
             ^nil  
@@ -258,6 +280,8 @@ LSPDatabase {
         } {
             sortText = "%:%".format(method.ownerClass.name, method.name)
         };
+
+		methodDocs = LSPDatabase.methodDocString(method);
         
         ^(
             label: method.name.asString,
@@ -268,14 +292,11 @@ LSPDatabase {
             kind: 2, 				// CompletionItemKind.Method
             // deprecated: false,	// mark this as deprecated - no way to use this?
             // detail:				// @TODO: additional detail
-            // documentation: 		// @TODO: method documentation
+            documentation: (
+				kind: "markdown",
+				value: methodDocs
+			),
             // detail:			    "detail", // @TODO: additional detail
-            // documentation: 	    ( // @TODO: doc string
-            // 	kind: 				"markdown",
-            // 	value: 				" *Documentation* **goes** here",
-            // 	isTrusted: 			true,
-            // 	supportThemeIcons: 	true
-            // ),
             sortText:				sortText,
             filterText: 			method.name.asString,
             // preselect: 			false,
@@ -304,7 +325,7 @@ LSPDatabase {
         
         try {
             stream = CollStream("");
-            SCDocHTMLRenderer.renderMethod(stream, node, \genericMethod, method.ownerClass);
+            LSPSCDocMarkdownRenderer.renderMethod(stream, node, \genericMethod, method.ownerClass);
             ^stream.collection;
         } {
             ^""
@@ -315,8 +336,7 @@ LSPDatabase {
         |method|
         var args, argDocs, methodDoc;
         args = method.argNames !? _[1..] ?? [];
-        // methodDoc = LSPDatabase.methodDocString(method);
-        
+        methodDoc = LSPDatabase.methodDocString(method);
         ^(
             label: "%:%%".format(
                 method.ownerClass.name, 
@@ -325,6 +345,7 @@ LSPDatabase {
             ),
             documentation: (
                 kind: "markdown",
+				value: methodDoc
             ),
             parameters: args.collect {
                 |argument, i|
@@ -339,7 +360,7 @@ LSPDatabase {
         |method|
         var args, argDocs, methodDoc;
         args = method.argNames !? _[1..] ?? [];
-        // methodDoc = LSPDatabase.methodDocString(method);
+        methodDoc = LSPDatabase.methodDocString(method);
         
         ^(
             label: "%%".format(
@@ -348,6 +369,7 @@ LSPDatabase {
             ),
             documentation: (
                 kind: "markdown",
+				value: methodDoc
             ),
             parameters: args.collect {
                 |argument, i|
@@ -513,12 +535,10 @@ LSPDatabase {
             // detail:				// @TODO: additional detail
             // documentation: 		// @TODO: method documentation
             // detail:			    "detail", // @TODO: additional detail
-            // documentation: 	    ( // @TODO: doc string
-            // 	kind: 				"markdown",
-            // 	value: 				" *Documentation* **goes** here",
-            // 	isTrusted: 			true,
-            // 	supportThemeIcons: 	true
-            // ),
+            documentation: 	    (
+             	kind: 				"markdown",
+             	value: 				LSPDatabase.classDocString(class),
+            ),
             sortText:				name,
             filterText: 			name,
             // preselect: 			false,
