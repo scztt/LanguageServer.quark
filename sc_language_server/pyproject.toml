@@ -5,7 +5,7 @@ description = "A sdtio wrapper for the LanguageServer.quark LSP server for Super
 requires-python = ">= 3.11"
 
 [project.scripts]
-sc-language-server = "main:main"
+sc-language-server = "sc_language_server:main"
 
 [tool.isort]
 profile = 'black'
