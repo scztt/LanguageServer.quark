@@ -43,14 +43,19 @@ class StdinThread(Thread):
 
         while not self._stop_event.is_set():
             try:
-                events = self._selector.select()
+                # Timeout ensures we go back around the while loop
+                # and check the stop event, but at a slow enough
+                # rate we don't eat CPU.
+                events = self._selector.select(5)
                 for key, mask in events:
                     callback = key.data
                     callback(key.fileobj, mask)
             except KeyboardInterrupt:
                 break
 
-    def __read(self, fileobj, _):
+    def __read(self, fileobj, mask):
+        if not mask & selectors.EVENT_READ:
+            return
         data = fileobj.read()
         if data:
             self._on_received(data)
