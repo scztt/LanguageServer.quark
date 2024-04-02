@@ -1,5 +1,6 @@
 // https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_implementation
 EvaluateProvider : LSPProvider {
+    classvar <>resultStringLimit = 2000;
     var resultPrefix="> ";
     var postResult=true;
     
@@ -28,7 +29,7 @@ EvaluateProvider : LSPProvider {
     
     onReceived {
         |method, params|
-        var source, document, function, result, resultStream;
+        var source, document, function, result, resultString;
         
         source = params["sourceCode"];
         document = LSPDocument.findByQUuid(params["textDocument"]["uri"].urlDecode);
@@ -44,13 +45,17 @@ EvaluateProvider : LSPProvider {
             LSPConnection.handlerThread.next({
                 thisProcess.nowExecutingPath = document.path;
                 try {
-                    resultStream = CollStream("");
-                    function.value().printOn(resultStream);
-                    result[\result] = resultStream.collection;
+                    resultString = String.streamContentsLimit({ 
+                        |stream| 
+                        function.value().printOn(stream); 
+                    }, resultStringLimit);
+                    
+                    if (resultStringLimit.size >= resultStringLimit, { ^(resultString ++ "...etc..."); });
+                    result[\result] = resultString;
                     
                     if (postResult) {
                         resultPrefix.post;
-                        resultStream.contents.postln;
+                        resultString.postln;
                     }
                 } {
                     |error|
