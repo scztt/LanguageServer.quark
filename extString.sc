@@ -2,15 +2,17 @@
     urlDecode {
         var str = this;
         
-        // @TODO More url encode replacements...
-        var replacements = (
-            "%20": " "
-        );
-        
-        replacements.keysValuesDo {
-            |key, value|
-            str = str.replace(key, value)
-        };
+        str.findRegexp("%[A-Fa-f0-9]{2}").collect({
+            |found|
+            var ch = found[1][1..];
+            ch = (ch[0].digit << 4) | ch[1].digit;
+            [found[0], ch]
+        }).reverseDo {
+            |replace|
+            str = str[0..(replace[0]-1)] 
+                ++ replace[1].asAscii 
+                ++ str[(replace[0] + 3)..]
+        };        
         
         ^str
     }
