@@ -456,7 +456,7 @@ LSPDatabase {
                             // "end region at %:% depth %".format(lineNum, i, regionDepth).postln;
                             regionStack.last.put(
                                 \end,
-                                (line: lineNum, character: i)
+                                (line: lineNum, character: i + 1)
                             );
                             regions = regions.add((
                                 range: regionStack.removeAt(regionStack.size-1),
