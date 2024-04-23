@@ -35,9 +35,8 @@ ShutdownProvider : LSPProvider {
                 // SUBTLE: Calling thisProcess.shutdown kills network sockets, which breaks
                 // our ability to call back to the LSP client. So we need to call everything
                 // EXCEPT for socket disconnect stuff here, and then disconnect sockets later.
-                ShutDown.run;
+                ShutDown.run();
                 Server.quitAll();
-                NetAddr.disconnectAll;
                 Archive.write;
                 
                 {
