@@ -388,16 +388,25 @@ LSPDatabase {
         var lineString = this.getDocumentLine(doc, line);
         var start = character;
         var word;
+        var isWord = {
+            |ch|
+            ch.isAlphaNum or: { ch == $_ }
+        };
         
         Log('LanguageServer.quark').info("Searching line for a word: '%' at %:%", lineString, line, character);
+
+        if (not(isWord.(lineString[start])) and: {
+            isWord.(lineString[(start - 1).max(0)])
+        }) {
+            start = start - 1;
+        };
         
         while {
-            (start >= 0) and: { ((lineString[start] !? _.isAlphaNum ?? true)  or: { lineString[start] == $_ }) }
+            (start >= 0) and: { isWord.(lineString[start]) }
         } {
             start = start - 1
         };
         start = start + 1;
-        
         word = lineString.findRegexpAt("[A-Za-z][\\w]*", start);
         if (word.size > 0) {
             ^word[0]
