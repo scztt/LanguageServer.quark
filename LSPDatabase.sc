@@ -358,6 +358,25 @@ LSPDatabase {
         )
     }
     
+    *getReferences {
+        |word|
+        var references = Class.findAllReferences(word.asSymbol);
+
+        ^references.collect {
+            |method|
+            this.renderMethodLocation(method)
+        }
+    }
+    
+    *getDefinitionsForWord {
+        |word|
+        var references = Class.findAllReferences(word.asSymbol);
+        
+        ^references.collect {
+            |method|
+            this.renderMethodLocation(method)
+        }
+    }
     
     *getDocumentLine {
         |doc, line|

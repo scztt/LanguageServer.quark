@@ -18,8 +18,15 @@ FindReferencesProvider : LSPProvider {
     
     onReceived {
         |method, params|
-        Log('LanguageServer.quark').info("Handling: %", method);
+        var doc = LSPDocument.findByQUuid(params["textDocument"]["uri"]);
+        var wordAtCursor = LSPDatabase.getDocumentWordAt(
+            doc,
+            params["position"]["line"].asInteger,
+            params["position"]["character"].asInteger
+        );
+
+        Log('LanguageServer.quark').info("Found word at cursor: %", wordAtCursor);
         
-        ^nil
+        ^(wordAtCursor !? { LSPDatabase.getReferences(wordAtCursor) } ?? {[]})
     }
 }

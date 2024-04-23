@@ -18,8 +18,18 @@ GotoImplementationProvider : LSPProvider {
     
     onReceived {
         |method, params|
-        Log('LanguageServer.quark').info("Handling: %", method);
-        
-        ^nil;
+        var doc = LSPDocument.findByQUuid(params["textDocument"]["uri"]);
+        var wordAtCursor = LSPDatabase.getDocumentWordAt(
+            doc,
+            params["position"]["line"].asInteger,
+            params["position"]["character"].asInteger
+        );
+                
+        ^(wordAtCursor !? { this.getDefinitionsForWord(wordAtCursor) })
+    }
+    
+    getDefinitionsForWord {
+        |word|
+        ^LSPDatabase.findDefinitions(word.asSymbol)
     }
 }

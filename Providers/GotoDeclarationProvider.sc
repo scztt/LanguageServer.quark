@@ -23,12 +23,17 @@ GotoDeclarationProvider : LSPProvider {
         var doc = LSPDocument.findByQUuid(params["textDocument"]["uri"]);
         var wordAtCursor = LSPDatabase.getDocumentWordAt(
             doc,
-            params["position"]["line"],
-            params["position"]["character"]
+            params["position"]["line"].asInteger,
+            params["position"]["character"].asInteger
         );
         
         Log('LanguageServer.quark').info("Found word at cursor: %", wordAtCursor);
         
-        ^nil
+        ^(wordAtCursor !? { this.getDefinitionsForWord(wordAtCursor) })
+    }
+    
+    getDefinitionsForWord {
+        |word|
+        ^LSPDatabase.findDefinitions(word.asSymbol)
     }
 }
