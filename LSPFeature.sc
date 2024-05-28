@@ -82,3 +82,13 @@ LSPRequest : LSPFeature {
         ^server.prHandleRequest(this.methodNames[0], params)
     }
 }
+
+LSPNotification : LSPFeature {
+    sendNotification {
+        |params|
+        ^server.prSendMessage((
+            method: this.methodNames[0],
+            params: params
+        ))
+    }
+}
