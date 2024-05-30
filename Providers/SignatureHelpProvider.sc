@@ -88,7 +88,7 @@ SignatureHelpProvider : LSPProvider {
         var commaCount = 0;
         var match, ch;
         
-        Log("LanguageServer.quark").info("Finding method name before %", end);
+        Log('LanguageServer.quark').info("Finding method name before %", end);
         end.reverseDo {
             |i|
             ch = string[i];
