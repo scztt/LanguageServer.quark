@@ -1,42 +1,45 @@
 ServerStatusNotification : LSPNotification {
     *methodNames {
-		^[
-			"supercollider/serverStatus",
-		]
-	}
+        ^[
+            "supercollider/serverStatus",
+        ]
+    }
 
     *clientCapabilityName { ^"supercollider.serverStatus" }
-	*serverCapabilityName { ^"serverStatus" }
+    *serverCapabilityName { ^"serverStatus" }
 
     init {
         // Register the updateState callbacks on a server
-        var registerServer = { | server update |
+        var registerServer = {
+            |server|
             SimpleController(server)
-                .put(\serverRunning, { this.updateState(server.name) })
-                .put(\counts, { this.updateState(server.name) });
-                //server.startAliveThread;
-            if (update) { this.updateState };
+                .put(\serverRunning, { this.updateState(server) })
+                .put(\counts, { this.updateState(server) })
+                .put(\didQuit, { this.updateState(server) });
+
+            this.updateState(server);
         };
 
         // Whenever a server is added, call registerServer
         SimpleController(Server)
-				.put(\serverAdded, { | serverClass what server | registerServer.value(server, true) });
-		Server.named.do(registerServer.value(_, false));
-        this.updateState;
+            .put(\serverAdded, { | serverClass what server | registerServer.value(server) });
+        Server.named.do(registerServer.value(_));
     }
 
-    updateState { |serverName|
+    updateState {
+        |server|
         // Currently, only the default server is supported.
-        if (Server.default.name == serverName, {
+        if (Server.default === server, {
             var params = (
-                \running: Server.default.serverRunning,
-                \unresponsive: Server.default.unresponsive,
-                \avgCPU: (Server.default.avgCPU ? 0.0).round(0.1),
-                \peakCPU: (Server.default.peakCPU ? 0.0).round(0.1),
-                \numUGens: Server.default.numUGens ? 0,
-                \numSynths: Server.default.numSynths ? 0,
-                \numGroups: Server.default.numGroups ? 0,
-                \numSynthDefs: Server.default.numSynthDefs ? 0
+                name: server.name,
+                running: server.serverRunning,
+                unresponsive: server.unresponsive,
+                avgCPU: (server.avgCPU ? 0.0).round(0.1),
+                peakCPU: (server.peakCPU ? 0.0).round(0.1),
+                numUGens: server.numUGens ? 0,
+                numSynths: server.numSynths ? 0,
+                numGroups: server.numGroups ? 0,
+                numSynthDefs: server.numSynthDefs ? 0
             );
 
             this.sendNotification(params);
@@ -44,7 +47,7 @@ ServerStatusNotification : LSPNotification {
     }
 
     options {
-		^(
-		)
-	}
+        ^(
+        )
+    }
 }
