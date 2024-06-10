@@ -199,7 +199,7 @@ LSPDatabase {
 				};
 				//try {
 					stream = CollStream("");
-					LSPSCDocMarkdownRenderer.renderOnStream(stream, doc, node);
+					SCDocMarkdownRenderer.renderOnStream(stream, doc, node);
 					classDocs.put(class.name, stream.collection);
 					^stream.collection;
 				//} {
@@ -325,7 +325,7 @@ LSPDatabase {
         
         try {
             stream = CollStream("");
-            LSPSCDocMarkdownRenderer.renderMethod(stream, node, \genericMethod, method.ownerClass);
+            SCDocMarkdownRenderer.renderMethod(stream, node, \genericMethod, method.ownerClass);
             ^stream.collection;
         } {
             ^""

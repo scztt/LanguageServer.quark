@@ -11,7 +11,8 @@
   dependencies: [
               		"https://github.com/scztt/Log.quark",
               		"https://github.com/scztt/UnitTest2.quark",
-              		"https://github.com/scztt/Deferred.quark"
+              		"https://github.com/scztt/Deferred.quark",
+              		"https://github.com/themissingcow/SCDocMarkdownRenderer.quark"
                 ],
   isCompatible: true ,
          since: ""
