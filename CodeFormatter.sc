@@ -9,7 +9,7 @@ CodeFormatter {
     }
     
     isRunning {
-        ^inPipe.isOpen
+		^inPipe !? _.isOpen ?? false
     }
     
     init {
@@ -38,6 +38,9 @@ CodeFormatter {
                 if (inPipe.isOpen) { ^true };
                 0.01.wait;
             };
+        } {
+            |e|
+            e.reportError;
         };
         
         ^false;

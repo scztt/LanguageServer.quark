@@ -249,6 +249,10 @@ LSPDatabase {
         |method, sortByClassHierarchy=false|
         var sortText;
         
+        method ?? {
+            ^nil  
+        };
+        
         if (sortByClassHierarchy) {
             sortText = (9 - method.ownerClass.superclasses.size).asString.zeroPad()
         } {
@@ -354,6 +358,25 @@ LSPDatabase {
         )
     }
     
+    *getReferences {
+        |word|
+        var references = Class.findAllReferences(word.asSymbol);
+
+        ^references.collect {
+            |method|
+            this.renderMethodLocation(method)
+        }
+    }
+    
+    *getDefinitionsForWord {
+        |word|
+        var references = Class.findAllReferences(word.asSymbol);
+        
+        ^references.collect {
+            |method|
+            this.renderMethodLocation(method)
+        }
+    }
     
     *getDocumentLine {
         |doc, line|
@@ -365,16 +388,25 @@ LSPDatabase {
         var lineString = this.getDocumentLine(doc, line);
         var start = character;
         var word;
+        var isWord = {
+            |ch|
+            ch.isAlphaNum or: { ch == $_ }
+        };
         
         Log('LanguageServer.quark').info("Searching line for a word: '%' at %:%", lineString, line, character);
+
+        if (not(isWord.(lineString[start])) and: {
+            isWord.(lineString[(start - 1).max(0)])
+        }) {
+            start = start - 1;
+        };
         
         while {
-            (start >= 0) and: { ((lineString[start] !? _.isAlphaNum ?? true)  or: { lineString[start] == $_ }) }
+            (start >= 0) and: { isWord.(lineString[start]) }
         } {
             start = start - 1
         };
         start = start + 1;
-        
         word = lineString.findRegexpAt("[A-Za-z][\\w]*", start);
         if (word.size > 0) {
             ^word[0]
@@ -389,39 +421,83 @@ LSPDatabase {
         var lines = doc.string.split($\n);
         var startRe = "^\\(\\s*(//)?\\s*(.*)\\s*$", endRe = "^\\)\\s*\\;?\\s*(//.*)?$";
         var regionStack=[], nameStack=[], regions=[], region;
+        var regionDepth = 0;
+        var inString = false;
+        var inSymbol = false;
+        var inComment = false;
+        var inLineComment = false;
         
         lines.do {
             |line, lineNum|
             var start;
-            
+            var lastCharacter;
+
             if ((start = line.findRegexp(startRe)).notEmpty) {
                 regionStack = regionStack.add((
-                    start: (line: lineNum, character: 0)
+                    start: (line: lineNum, character: 0, depth: regionDepth)
                 ));
+                // "starting region at %:% depth %".format(lineNum, 0, regionDepth).postln;
                 
-                if (start.isEmpty) {
-                    nameStack = nameStack.add("[block %]".format(regions.size + nameStack.size));                       
+                if (start[2][1].size > 0) {
+                    nameStack = nameStack.add(start[2][1]);                                    
                 } {
-                    if (start[2][1].size > 0) {
-                        nameStack = nameStack.add(start[2][1]);                                    
-                    } {
-                        nameStack = nameStack.add("[block %]".format(regions.size + nameStack.size));                                    
-                    }
+                    nameStack = nameStack.add("[block %]".format(regions.size + nameStack.size));                                    
                 }
-            } {
-                if (endRe.matchRegexp(line)) {
-                    if (regionStack.size > 0) {
-                        regionStack.last.put(
-                            \end,
-                            (line: lineNum, character: line.size)
-                        );
-                        regions = regions.add((
-                            range: regionStack.removeAt(regionStack.size-1),
-                            text: nameStack.removeAt(nameStack.size-1)
-                        ));
-                    }
-                }
-            }
+            };
+
+            if (regionStack.size > 0) {
+                line.do {
+                    |character, i|
+                    if (character == $") {
+                        inString = inString.not;
+                    };
+
+                    if (character == $') {
+                        inSymbol = inSymbol.not;
+                    };
+
+                    if (inString.not && inSymbol.not && (character == $/) && (lastCharacter == $/)) {
+                        // "line % char %, inLineComment".format(lineNum, i).postln;
+                        inLineComment = true;
+                    };
+
+                    if (inString.not && inSymbol.not && (character == $*) && (lastCharacter == $/)) {
+                        inComment = true;
+                    };
+
+                    if (inString.not && inSymbol.not && (character == $/) && (lastCharacter == $*)) {
+                        inComment = false;
+                    };
+
+                    if (inSymbol.not && inString.not && inLineComment.not && inComment.not) {
+                        if (character == $() {
+                            regionDepth = regionDepth + 1;
+                            // "line %, regionDepth: %".format(lineNum, regionDepth).postln;
+                        };
+
+                        if (character == $)) {
+                            regionDepth = regionDepth - 1;
+                            // "line %, regionDepth: %".format(lineNum, regionDepth).postln;
+                        };
+
+                        if (regionStack.isEmpty.not and:{ regionStack.last[\start][\depth] == regionDepth }) {   
+                            // "end region at %:% depth %".format(lineNum, i, regionDepth).postln;
+                            regionStack.last.put(
+                                \end,
+                                (line: lineNum, character: i + 1)
+                            );
+                            regions = regions.add((
+                                range: regionStack.removeAt(regionStack.size-1),
+                                text: nameStack.removeAt(nameStack.size-1)
+                            ));
+                        }
+                    };
+
+                    lastCharacter = character;
+                };
+
+                inLineComment = false;
+            };
         };
         
         ^regions

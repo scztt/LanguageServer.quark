@@ -38,7 +38,6 @@ SignatureHelpProvider : LSPProvider {
                 ownerClass = methodName !? _.asSymbol !? _.asClass !? _.class;
                 
                 methodName !? _.asSymbol !? _.asClass !? _.class
-                    !? _.postln
                     !? {
                         |classes|
                         classes = [classes] ++ classes.superclasses;
@@ -89,7 +88,7 @@ SignatureHelpProvider : LSPProvider {
         var commaCount = 0;
         var match, ch;
         
-        Log("LanguageServer.quark").info("Finding method name before %", end);
+        Log('LanguageServer.quark').info("Finding method name before %", end);
         end.reverseDo {
             |i|
             ch = string[i];

@@ -1,12 +1,29 @@
 // https://microsoft.github.io/language-server-protocol/specifications/specification-current/#initialize
 InitializeProvider : LSPProvider {
-    var initializeParams;
+    classvar <>suggestedServerPort=57110;
+    classvar <>initializeActions;
+    var <initializationOptions, initializeParams;
     
     *methodNames { 
         ^["initialize"] 
     }
     *clientCapabilityName { ^nil }
     *serverCapabilityName { ^nil }
+
+    *onInitialize {
+        |func|
+        initializeActions = initializeActions.add(func);
+    }
+
+    *prDoOnInitialize {
+        |options|
+        initializeActions.do {
+            |func|
+            protect {
+                func.value(options)
+            }
+        }
+    }
     
     init {
     }
@@ -32,6 +49,7 @@ InitializeProvider : LSPProvider {
         var serverCapabilities;
         
         initializeParams = params;
+        initializationOptions = initializeParams["initializationOptions"] ?? {()};
 
         initializeParams["workspaceFolders"] !? {
             |folders|
@@ -46,9 +64,23 @@ InitializeProvider : LSPProvider {
             };
         };
 
+        Log('LanguageServer.quark').error("suggestedServerPortRange: %", initializationOptions["suggestedServerPortRange"]);
+        initializationOptions["suggestedServerPortRange"] !? {
+            |range|
+            range = [range[0].asInteger, range[1].asInteger];
+            this.class.suggestedServerPort = range[0];
+            "Using default server port: % (allocated range: %-%)".format(range[0], range[0], range[1]-1).postln;
+            Server.all.do {
+                |s|
+                s.addr.port = this.class.suggestedServerPort.asInteger;
+            }
+        };
+
         serverCapabilities = ();
         this.addProviders(initializeParams["capabilities"], serverCapabilities);
         Log('LanguageServer.quark').info("Server capabilities are: %", serverCapabilities);
+
+        { this.class.prDoOnInitialize(initializationOptions) }.defer(0.0000001);
         
         ^(
             "serverInfo": server.serverInfo,

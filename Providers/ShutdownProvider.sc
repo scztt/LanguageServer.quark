@@ -24,23 +24,37 @@ ShutdownProvider : LSPProvider {
     
     onReceived {
         |method, params|
-        var code;
+        var code, deferred;
         
         switch (method)
             { 'shutdown' } {
+                "*** STARTING SHUT DOWN ***".postln;
                 Log('LanguageServer.quark').info("Preparing to shutdown");
                 receivedShutdown = true;
-                Server.killAll;
+                
+                // SUBTLE: Calling thisProcess.shutdown kills network sockets, which breaks
+                // our ability to call back to the LSP client. So we need to call everything
+                // EXCEPT for socket disconnect stuff here, and then disconnect sockets later.
+                ShutDown.run();
+                Server.quitAll();
+                Archive.write;
+                
                 {
-                    Log('LanguageServer.quark').info("We're still alive..... killing.");
+                    "*** SERVER SHUTDOWN WAS LATE".postln;
                     1.exit;
                 }.defer(2);
                 
-                ^nil
+                "*** SHOWDOWN IMMINENT ***".postln;
+                ^nil;
             }
             { 'exit' } {
+                "*** EXITING ***".postln;
                 Log('LanguageServer.quark').info("Exiting");
-                receivedShutdown.if(0, 1).exit;
+                File.closeAll;
+                NetAddr.disconnectAll;
+                {
+                    receivedShutdown.if(0, 1).exit;
+                }.defer(1);
                 ^nil;
             }
     }
