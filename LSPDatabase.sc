@@ -205,7 +205,7 @@ LSPDatabase {
     
     *renderMethodRange {
         |method|
-        var file = File(method.filenameSymbol.asString.replace("\\","/"), "r");
+        var file = File(method.filenameSymbol.asString, "r");
         var methodFileSource = file.readAllString();
         var lineChar = methodFileSource.charToLineChar(method.charPos);
         
