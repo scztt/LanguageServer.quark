@@ -41,7 +41,7 @@ LSPDocument : Document {
     
     *open { | path, selectionStart=0, selectionLength=0, envir |
         LSPConnection.connection.request('window/showDocument', (
-            uri: "file:///%".format(path.standardizePath),
+            uri: path.standardizePath.pathToFileURI,
             takeFocus: true,
             // selection:
         ))
@@ -55,7 +55,7 @@ LSPDocument : Document {
             uri,
             string,
             false,
-            uri.copy.replace("file:///", "").urlDecode,
+            uri.copy.fileURIToPath,
             0,
             0
         );
@@ -178,8 +178,8 @@ LSPDocument : Document {
     }
     
     path {
-        if (quuid.contains("file:///")) {
-            ^quuid.copy.replace("file:///", "").urlDecode
+        if (quuid.contains("file://")) {
+            ^quuid.copy.fileURIToPath
         } {
             ^nil
         }
