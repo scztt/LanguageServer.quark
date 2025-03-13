@@ -205,7 +205,7 @@ LSPDatabase {
     
     *renderMethodRange {
         |method|
-        var file = File(method.filenameSymbol.asString, "r");
+        var file = File(method.filenameSymbol.asString.replace("\\","/"), "r");
         var methodFileSource = file.readAllString();
         var lineChar = methodFileSource.charToLineChar(method.charPos);
         
@@ -232,7 +232,7 @@ LSPDatabase {
     *renderMethodLocation {
         |method|
         ^(
-            uri: "file://%".format(method.filenameSymbol),
+            uri: "file:///%".format(method.filenameSymbol.asString.replace("\\","/")),
             range: this.renderMethodRange(method)
         )
     }
@@ -240,7 +240,7 @@ LSPDatabase {
     *renderClassLocation {
         |class|
         ^(
-            uri: "file://%".format(class.filenameSymbol),
+            uri: "file:///%".format(class.filenameSymbol.asString.replace("\\","/")),
             range: this.renderClassRange(class)
         )
     }
