@@ -176,7 +176,7 @@ EvaluateProvider : LSPProvider {
                 };
                 
                 out << "\t%:%\t".format(ownerClass, methodName).padRight(30)
-                    << def.filenameSymbol.asString.pathToFileURI
+                    << "(%)".format(def.filenameSymbol.asString.pathToFileURI)
                     << Char.nl;
             } {
                 out << "\ta FunctionDef\t%\n".format(currentFrame.address);
