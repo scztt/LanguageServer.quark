@@ -82,6 +82,10 @@ LSPConnection {
         })
     }
     
+    *enabled {
+        ^this.envirSettings[\enabled]
+    }
+    
     start {
         // @TODO: What do we do before start / after stop? Errors?
         Log('LanguageServer.quark').info("Starting language server, inPort: % outPort:%", inPort, outPort);
