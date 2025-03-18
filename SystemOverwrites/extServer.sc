@@ -1,10 +1,10 @@
 +Server {
-    *suggestedDefaultPort {
-        ^InitializeProvider.suggestedDefaultPort ?? { 57110 }
+    *suggestedServerPort {
+        ^InitializeProvider.suggestedServerPort ?? { 57110 }
     }
     
     *defaultNetAddr {
-        ^NetAddr.new("127.0.0.1", Server.suggestedDefaultPort)
+        ^NetAddr.new("127.0.0.1", Server.suggestedServerPort)
     }
     
     *fromName { |name|

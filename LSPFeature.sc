@@ -56,7 +56,7 @@ LSPFeature {
             var providerClasses, dictionary;
             
             providerClasses = this.allSubclasses.collect(_.allSubclasses).flatten;
-            providerClasses = providerClasses.reject(_ == DynamicProvider).reject(_.isNil);
+            providerClasses = providerClasses.reject(_ == InitializeProvider).reject(_ == DynamicProvider).reject(_.isNil);
             providerClasses = providerClasses.addAll(DynamicProvider.all);
             
             ^providerClasses
