@@ -34,10 +34,9 @@
         ^(currentIndex + character)
     }
 
-    /*
-    Given an absolute file path in OSX, Windows, or Linux format, return a file URI
-    that will be understood by the LSP client.
-    */
+    
+    // Given an absolute file path in OSX, Windows, or Linux format, return a file URI
+    // that will be understood by the LSP client.
     pathToFileURI {
         ^Platform.case(
             \osx, { "file://" ++ this },
