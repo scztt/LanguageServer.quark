@@ -29,7 +29,7 @@ DocumentSymbolProvider : LSPProvider {
                     |region|
                     (
                         name: region[\text],
-                        kind: 0,
+                        kind: 2,
                         range: region[\range],
                         selectionRange: region[\range]
                     )
