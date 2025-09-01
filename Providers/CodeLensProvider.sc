@@ -27,7 +27,11 @@ CodeLensProvider : LSPProvider {
                 command: (
                     title: "▶ EVALUATE ———————————————————————————————",
                     command: "supercollider.evaluateSelection",
-                    arguments: [region[\range]]
+                    name: region[\text],
+                    arguments: [
+                        params["textDocument"]["uri"], 
+                        region[\range],
+                    ]
                 )
             )
         }
