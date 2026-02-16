@@ -232,7 +232,7 @@ LSPDatabase {
     *renderMethodLocation {
         |method|
         ^(
-            uri: "file://%".format(method.filenameSymbol),
+            uri: method.filenameSymbol.asString.pathToFileURI,
             range: this.renderMethodRange(method)
         )
     }
@@ -240,7 +240,7 @@ LSPDatabase {
     *renderClassLocation {
         |class|
         ^(
-            uri: "file://%".format(class.filenameSymbol),
+            uri: class.filenameSymbol.asString.pathToFileURI,
             range: this.renderClassRange(class)
         )
     }
