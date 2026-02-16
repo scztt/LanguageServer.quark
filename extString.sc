@@ -33,29 +33,4 @@
         
         ^(currentIndex + character)
     }
-
-    
-    // Given an absolute file path in OSX, Windows, or Linux format, return a file URI
-    // that will be understood by the LSP client.
-    pathToFileURI {
-        ^Platform.case(
-            \osx, { "file://" ++ this },
-            \windows, { "file:///" ++ this.replace("\\", "/") },
-            \linux, { "file://" ++ this },
-            { "file://" ++ this }
-        )
-    }
-
-    /*
-    Reverse of pathToFileURI - given a file URI, returns a path in the format of the 
-    current OS.
-    */
-    fileURIToPath {
-        ^(Platform.case(
-            \osx, { this.replace("file://", "") },
-            \windows, { this.replace("file:///", "").replace("/", "\\") },
-            \linux, { this.replace("file://", "") },
-            { this.replace("file://", "") }
-        ).urlDecode)
-    }
 }

@@ -5,7 +5,6 @@ EvaluateProvider : LSPProvider {
         <>sourceCodeLineLimit=6,
         <>skipErrorConstructors=true;
     var resultPrefix="> ";
-    var guestUserPrefix="[%|> ";
     var postResult=true, improvedErrorReports=false;
     var <>postBeforeEvaluate="", <>postAfterEvaluate="";
     
@@ -23,7 +22,6 @@ EvaluateProvider : LSPProvider {
             |server, message, value|
             if (message == \clientOptions) {
                 resultPrefix = value['sclang.evaluateResultPrefix'] ?? {"> "};
-                guestUserPrefix = value['sclang.guestEvaluateResultPrefix'] ?? {"[%|> "};
                 postResult = value['sclang.postEvaluateResults'] !? (_ == "true") ?? true;
                 improvedErrorReports = value['sclang.improvedErrorReports'] !? (_ == "true") ?? false;
             }
@@ -46,10 +44,9 @@ EvaluateProvider : LSPProvider {
     
     onReceived {
         |method, params|
-        var source, document, function, guestUser, result, deferredResult;
+        var source, document, function, result, deferredResult;
         
         source = params["sourceCode"];
-        guestUser = params["user"];
         document = LSPDocument.findByQUuid(params["textDocument"]["uri"].urlDecode);
         
         deferredResult = Deferred();
@@ -74,12 +71,7 @@ EvaluateProvider : LSPProvider {
                 
                 if (resultStringLimit.size >= resultStringLimit, { ^(result ++ "...etc..."); });
                 if (postResult) {
-                    if (guestUser.notNil) {
-                        guestUserPrefix.format(guestUser).post;
-                    } {
-                        resultPrefix.post;
-                    };
-                    
+                    resultPrefix.post;
                     result.postln;
                 };
                 deferredResult.value = (result: result);
@@ -176,7 +168,7 @@ EvaluateProvider : LSPProvider {
                 };
                 
                 out << "\t%:%\t".format(ownerClass, methodName).padRight(30)
-                    << "(%)".format(def.filenameSymbol.asString.pathToFileURI)
+                    << "(file://%)".format(def.filenameSymbol)
                     << Char.nl;
             } {
                 out << "\ta FunctionDef\t%\n".format(currentFrame.address);

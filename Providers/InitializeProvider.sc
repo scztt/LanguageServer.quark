@@ -63,12 +63,12 @@ InitializeProvider : LSPProvider {
             |folders|
             folders.do {
                 |folder|
-                server.workspaceFolders.add(folder["uri"].copy.fileURIToPath)
+                server.workspaceFolders.add(folder["uri"].copy.replace("file://", "").urlDecode)
             };
         } ?? {
             initializeParams["rootUri"] ?? initializeParams["rootPath"] !? {
                 |root|
-                server.workspaceFolders.add(root.copy.fileURIToPath)
+                server.workspaceFolders.add(root.copy.replace("file://", "").urlDecode)
             };
         };
         
