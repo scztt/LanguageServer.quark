@@ -5,10 +5,11 @@
 
 LSPDatabase {
     classvar allMethodNames, allMethods, allClasses, allMethodsByName, methodLocations;
-    classvar classSymbols, methodSymbols, allSymbolObjects;
+    classvar classSymbols, methodSymbols, allSymbolObjects, docRegionsCache;
     
     *initClass {
         methodLocations = ();
+        docRegionsCache = Dictionary();
     }
     
     *methodSortFunc {
@@ -360,6 +361,89 @@ LSPDatabase {
         )
     }
     
+    *classHoverInfo {
+        |class|
+        var stream, sourceLines, sourcePreview,
+            doc, root, descNode, docStream
+            ;
+        
+        // Read first 10 lines of class source
+        try {
+            var file = File(class.filenameSymbol.asString, "r");
+            var fileSource = file.readAllString;
+            var lineChar = fileSource.charToLineChar(class.charPos);
+            var startLine = lineChar[0];
+            
+            file.close;
+            
+            sourceLines = fileSource.split($\n);
+            sourceLines = sourceLines[startLine .. (startLine + 9).min(sourceLines.size - 1)];
+            sourcePreview = sourceLines.join("\n");
+        } {
+            sourcePreview = nil;
+        };
+        
+        // Get SCDoc description
+        doc = SCDoc.documents["Classes/" ++ class.name];
+        docStream = CollStream("");
+        
+        if (doc.notNil) {
+            try {
+                root = doc.fullPath !? { SCDoc.parseFileFull(doc.fullPath) };
+                root !? {
+                    SCDocMarkdownRenderer.renderSection(docStream, doc, root, \DESCRIPTION);
+                };
+            } { };
+        };
+        
+        stream = CollStream("");
+        
+        // Header
+        stream << "## " << class.name;
+        class.superclass !? { stream << " : " << class.superclass.name };
+        stream << "\n\n";
+
+        // Documentation
+        if (docStream.collection.size > 0) {
+            stream << docStream.collection;
+        };
+
+        // Source preview
+        sourcePreview !? {
+            stream << "\n---\n\n";
+            stream << "```supercollider\n" << sourcePreview << "\n```\n";
+        };
+        
+        ^stream.collection
+    }
+
+    *methodHoverInfo {
+        |methodName, limit=10|
+        var methods, stream;
+
+        methods = this.methodsForName(methodName.asSymbol);
+        if (methods.isNil or: { methods.isEmpty }) { ^nil };
+
+        stream = CollStream("");
+        stream << "## " << methodName << "\n\n";
+
+        methods[0 .. (limit - 1)].do { |method|
+            var className = method.ownerClass.name.asString;
+            if (method.ownerClass.isMetaClass) {
+                stream << className.replace("Meta_", "") << ":\\*" << method.name;
+            } {
+                stream << className << ":" << method.name;
+            };
+            stream << this.methodArgDefaultString(method) << "\n\n";
+        };
+
+        if (methods.size > limit) {
+            stream << "*... and " << (methods.size - limit) << " more implementations*\n";
+        };
+
+        ^stream.collection
+    }
+
     *getReferences {
         |word|
         var references = Class.findAllReferences(word.asSymbol);
@@ -419,6 +503,7 @@ LSPDatabase {
     
     *getDocumentRegions {
         |doc|
+        var cached = docRegionsCache[doc.path];
         // @TODO Parse properly to account for e.g. comments...
         var lines = doc.string.split($\n);
         var startRe = "^\\(\\s*(//)?\\s*(.*)\\s*$", endRe = "^\\)\\s*\\;?\\s*(//.*)?$";
@@ -428,6 +513,12 @@ LSPDatabase {
         var inSymbol = false;
         var inComment = false;
         var inLineComment = false;
+        
+        if (cached.notNil) {
+            if (cached[\version] == doc.version) {
+                ^cached[\value]
+            }
+        };
         
         lines.do {
             |line, lineNum|
@@ -501,6 +592,11 @@ LSPDatabase {
                 inLineComment = false;
             };
         };
+        
+        docRegionsCache[doc.path] = (
+            version: doc.version,
+            value: regions
+        );
         
         ^regions
     }
