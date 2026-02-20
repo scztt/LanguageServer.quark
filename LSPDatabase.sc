@@ -444,6 +444,45 @@ LSPDatabase {
         ^stream.collection
     }
 
+    *envVarHoverInfo {
+        |name|
+        var sym = name.asSymbol;
+        var val = currentEnvironment[sym];
+        var stream;
+
+        if (val.isNil) { ^nil };
+
+        stream = CollStream("");
+        stream << "## ~" << name << "\n\n";
+        stream << "```supercollider\n" << val.asCompileString << "\n```\n";
+
+        ^stream.collection
+    }
+
+    *defClassHoverInfo {
+        |class|
+        var names, stream;
+
+        if (class.isDefClass.not) { ^nil };
+
+        names = class.prGetNames.asArray.sort;
+        if (names.isEmpty) { ^nil };
+
+        stream = CollStream("");
+        stream << "## " << class.name << "\n\n";
+        stream << names.size << " registered:\n\n";
+
+        names[0 .. 19].do { |name|
+            stream << "- `\\" << name << "`\n";
+        };
+
+        if (names.size > 20) {
+            stream << "\n*... and " << (names.size - 20) << " more*\n";
+        };
+
+        ^stream.collection
+    }
+
     *getReferences {
         |word|
         var references = Class.findAllReferences(word.asSymbol);
@@ -476,24 +515,24 @@ LSPDatabase {
         var word;
         var isWord = {
             |ch|
-            ch !? { ch.isAlphaNum or: { ch == $_ } } ?? { false }
+            ch !? { ch.isAlphaNum or: { ch == $_ } or: { ch == $~ } } ?? { false }
         };
-        
+
         Log('LanguageServer.quark').info("Searching line for a word: '%' at %:%", lineString, line, character);
-        
+
         if (not(isWord.(lineString[start])) and: {
             isWord.(lineString[(start - 1).max(0)])
         }) {
             start = start - 1;
         };
-        
+
         while {
             (start >= 0) and: { isWord.(lineString[start]) }
         } {
             start = start - 1
         };
         start = start + 1;
-        word = lineString.findRegexpAt("[A-Za-z][\\w]*", start);
+        word = lineString.findRegexpAt("~?[A-Za-z][\\w]*", start);
         if (word.size > 0) {
             ^word[0]
         } {
