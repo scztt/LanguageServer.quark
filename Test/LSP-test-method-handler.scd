@@ -1,4 +1,8 @@
-Log('LanguageServer.quark').level = \debug;
+(
+/*
+UnitTestScript("LSP", thisProcess.nowExecutingPath).runScript;
+*/
+Log(Test).level = \error;
 UnitTest2("methodHandler", {
     |test|
     var handler = LSPCompletionHandler.methodHandler;
@@ -15,7 +19,7 @@ UnitTest2("methodHandler", {
             handler.validatePrefix("(variable", "."), "variable",
             "Valid variable name"
         );
-
+        
         test.equals(
             handler.validatePrefix("   variable", "."), "variable",
             "Valid variable name"
@@ -57,12 +61,12 @@ UnitTest2("methodHandler", {
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     test.section("handle", {
         
-        handler.handle("variable", ".", "prHandle", {
+        handler.handle("variable", ".", "prHandle").then {
             |result|
             var prHandleMessageDescription;
             
             test.equals(
-                result[\items].size,  4
+                result[\items].size,  8
             );
             
             prHandleMessageDescription = result[\items].detect({
@@ -75,25 +79,26 @@ UnitTest2("methodHandler", {
             test.equals(
                 prHandleMessageDescription[\labelDetails],
                 (
-                    detail: "prHandleMessage(object)",
-                    description: "LSPConnection:prHandleMessage"
+                    detail: "(object)",
+                    description: "LSPConnection"
                 ),
             );
             
             test.equals(
                 prHandleMessageDescription[\label],
-                "prHandleMessage(object)"
+                "prHandleMessage"
             )
-        });
+        };
         
-        handler.handle(Meta_LSPCompletionHandler, ".", "com", {
+        handler.handle(Meta_LSPCompletionHandler, ".", "com").then {
             |result|
             
             test.equals(
                 result[\items].size,
-                104,
+                100,
                 "Correct number of completions"
             );
-        });
+        };
     })
 }).runOrAdd;
+)

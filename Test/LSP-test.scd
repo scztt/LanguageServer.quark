@@ -1,4 +1,7 @@
-
+(
+/*
+UnitTestScript("LSP", thisProcess.nowExecutingPath).runScript;
+*/
 UnitTest2({
     |test|
     var method, handler, prefixCalled, actionCalled, mockMessage;
@@ -12,24 +15,28 @@ UnitTest2({
         test.equals(
             LSPDatabase.methodDetails(method),
             (
-                detail: "validatePrefix(prefix, validateTrigger)",
+                detail: "(prefix, validateTrigger)",
                 description: "LSPCompletionHandler:validatePrefix"
-            )
+            ),
+            "methodDetails"
         );
-        
+
         test.equals(
             LSPDatabase.methodArgString(method),
-            "validatePrefix(prefix, validateTrigger)"
+            "(prefix, validateTrigger)",
+            "methodArgString"
         );
-        
+
         test.equals(
             LSPDatabase.methodInsertString(method),
-            "validatePrefix(${1:prefix}, ${2:validateTrigger}${0})"
+            "validatePrefix(${1:prefix}, ${2:validateTrigger})${0}",
+            "methodInsertString"
         );
-        
+
         test.equals(
             LSPDatabase.methodArgString(method),
-            "validatePrefix(prefix, validateTrigger)"
+            "(prefix, validateTrigger)",
+            "methodArgString (2)"
         );
     });
     
@@ -85,4 +92,5 @@ UnitTest2({
     });
     
     
-}
+}).runOrAdd;
+)

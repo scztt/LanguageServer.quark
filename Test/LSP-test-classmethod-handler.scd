@@ -1,3 +1,7 @@
+/*
+UnitTestScript("LSP", thisProcess.nowExecutingPath).runScript;
+*/
+(
 UnitTest2("classMethodHandler", {
     |test|
     var handler = LSPCompletionHandler.classMethodHandler;
@@ -40,12 +44,8 @@ UnitTest2("classMethodHandler", {
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     test.section("handle", {
-        "asdf".warn;
-        handler.handle(Meta_LSPCompletionHandler, ".", "addHan", {
+        handler.handle(Meta_LSPCompletionHandler, ".", "addHan").then {
             |result|
-            
-            "asdfadsfads".warn;
-            result.postln;
             
             test.equals(
                 result[\items].size,
@@ -61,18 +61,18 @@ UnitTest2("classMethodHandler", {
             test.equals(
                 result[\items][0][\labelDetails],
                 (
-                    detail: "addHandler(name, trigger, prefixHandler, action)",
-                    description: "Meta_LSPCompletionHandler:addHandler"
+                    detail: "(name, trigger, prefixHandler, action)",
+                    description: "Meta_LSPCompletionHandler"
                 ),
             );
             
             test.equals(
                 result[\items][0][\label],
-                "addHandler(name, trigger, prefixHandler, action)"
+                "addHandler"
             )
-        });
+        };
         
-        handler.handle(Meta_LSPCompletionHandler, ".", "com", {
+        handler.handle(Meta_LSPCompletionHandler, ".", "com").then {
             |result|
             
             test.equals(
@@ -80,6 +80,7 @@ UnitTest2("classMethodHandler", {
                 5,
                 "Correct number of completions"
             );
-        });
+        };
     })
-}
+}).runOrAdd
+);

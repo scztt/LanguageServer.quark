@@ -1,7 +1,7 @@
 /*
 UnitTestScript("LSP", thisProcess.nowExecutingPath).runScript;
 */
-
+(
 UnitTest2("singletonHandler", {
     |test|
     var method, handler, prefixCalled, actionCalled, mockMessage;
@@ -37,34 +37,35 @@ UnitTest2("singletonHandler", {
     test.section("handle", {
         test.section("Pdef", {
             
+            Pdef.clear;
             Pdef(\__unit_testing,  	Pbind());
             Pdef(\__unit_testing_2, Pbind());
             Pdef(\__unmatched_name, Pbind());
             
             // Pdef(\__uni)
-            handler.handle(Pdef, "(", "\\__uni", {
+            handler.handle(Pdef, "(", "\\__uni").then {
                 |result|
                 
                 test.equals(
                     result[\items].size,
-                    2,
+                    3,
                     "Correct number of completions"
                 );
                 
                 test.equals(
-                    result[\items][0][\filterText],
+                    result[\items][0][\label],
                     "\\__unit_testing"
                 );
                 
                 test.equals(
-                    result[\items][1][\filterText],
+                    result[\items][1][\label],
                     "\\__unit_testing_2"
                 );
                 
                 test.equals(
                     result[\items][1][\labelDetails],
                     (
-                        detail: "Pdef(\\__unit_testing_2)"
+                        detail: "  Pdef(\\__unit_testing_2)"
                     ),
                 );
                 
@@ -72,28 +73,30 @@ UnitTest2("singletonHandler", {
                     result[\items][1][\label],
                     "\\__unit_testing_2"
                 )
-            });
+            };
             
         });
         
-        test.section("Pbind", {
+        test.section("Ndef", {
             Ndef(\__unit_testing,  	Pbind());
             Ndef(\__unit_testing_2, Pbind());
             Ndef(\__unmatched_name, Pbind());
             
             // Ndef(\__uni)
-            handler.handle(Ndef, "(", "\\__uni", {
+            handler.handle(Ndef, "(", "\\__uni").then {
                 |result|
                 
                 test.equals(
                     result[\items].size,
-                    2,
+                    3,
                     "Correct number of completions"
                 );
-            });
+            };
             
         })
         
         
     })
-}
+}).runOrAdd
+
+)

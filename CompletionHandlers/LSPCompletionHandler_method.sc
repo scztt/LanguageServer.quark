@@ -8,11 +8,16 @@
             prefixHandler: {
                 |prefix|
                 // @TODO improve regex / parsing ...
-                var prefixString = prefix.findRegexp("^[^~0-9A-Za-z-]*([~0-9a-z][\\w\\.]*)");
-                
+                var prefixString = prefix.findRegexp("(?:^|[\\s,;=+*/%(){}])([~0-9a-z][\\w\\.]*)$");
+
                 if (prefixString.notEmpty) {
                     prefixString = prefixString[1][1];
-                    prefixString.stripWhiteSpace;
+                    // Reject trailing dot (double-dot case, e.g. "variable..")
+                    if (prefixString.last == $.) {
+                        nil
+                    } {
+                        prefixString.stripWhiteSpace
+                    };
                     // @TODO If prefix is environment var, only show completions for that type?
                 } {
                     nil

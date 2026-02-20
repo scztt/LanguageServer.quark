@@ -10,7 +10,7 @@
                 var prefixClass;
                 
                 // @TODO: Improve regex/parsing to detect all class method like cases....
-                prefixClass = prefix.findRegexp("^[^\\w]*([A-Z][A-Za-z0-9_]*)");
+                prefixClass = prefix.findRegexp("(?:^|[^\\w])([A-Z][A-Za-z0-9_]*)$");
                 
                 if (prefixClass.notEmpty) {
                     prefixClass = prefixClass[1][1];

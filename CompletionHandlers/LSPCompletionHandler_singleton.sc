@@ -10,7 +10,7 @@
             trigger: "(",
             prefixHandler: {
                 |prefix|
-                var prefixClass = prefix.findRegexp("[^\\w-]*([A-Z]\\w*)$");
+                var prefixClass = prefix.findRegexp("(?:^|[^\\w])([A-Z]\\w*)$");
                 
                 Log('LanguageServer.quark').info("prefix: %, prefixClass: %", prefix, prefixClass);
                 

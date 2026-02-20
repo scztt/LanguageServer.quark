@@ -61,7 +61,7 @@ LSPCompletionHandler {
         if (char >= 0) {
             completion = lineString[char+1..].stripWhiteSpace;
             completionTrigger = lineString[char];
-            prefix = lineString[..char-1].findRegexp("([~\\w]*\\(?)$".format(
+            prefix = lineString[..char-1].findRegexp("([~\\w]+\\(?)$".format(
                 triggerCharacters.escapeChar($().escapeChar($\\)
             ));
             if (prefix.notEmpty) {
@@ -129,7 +129,9 @@ LSPCompletionHandler {
         var reResult;
         
         if (trigger != validateTrigger) { ^nil };
-        
+
+        prefix = prefix ? "";
+
         ^if (prefixHandler.isString) {
             reResult = prefix.findRegexp(prefixHandler);
             if (reResult.notEmpty) {

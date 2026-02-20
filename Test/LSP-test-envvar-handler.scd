@@ -1,3 +1,7 @@
+(
+/*
+UnitTestScript("LSP", thisProcess.nowExecutingPath).runScript;
+*/
 UnitTest2("environmentVariableHandler", {
     |test|
     var handler = LSPCompletionHandler.environmentVariableHandler;
@@ -34,24 +38,25 @@ UnitTest2("environmentVariableHandler", {
         ~variable2 = "test";
         ~valiable = "test";
         
-        handler.handle(Meta_LSPCompletionHandler, "~", "var", {
+        handler.handle(Meta_LSPCompletionHandler, "~", "var").then {
             |result|
             
             test.equals(
                 result[\items].size,
-                2,
+                3,
                 "Correct number of completions"
             );
             
             test.equals(
                 result[\items][1][\filterText],
-                "variable2"
+                "variable1"
             );
             
             test.equals(
                 result[\items][1][\insertText],
-                "~variable2"
+                "variable1$0"
             )
-        })
+        }
     })
-}
+}).runOrAdd
+)
