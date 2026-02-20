@@ -71,7 +71,11 @@
 
 +Platform {
     startupFiles {
-        ^InitializeProvider.startupFiles
+        if (LSPConnection.enabled) {
+            ^InitializeProvider.startupFiles;
+        } {
+            ^[defaultStartupFile];
+        };
     }
 }
 
