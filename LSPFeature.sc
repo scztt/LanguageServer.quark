@@ -91,4 +91,12 @@ LSPNotification : LSPFeature {
             params: params
         ))
     }
+    
+    sendNotificationName {
+        |name, params|
+        ^server.prSendMessage((
+            method: name,
+            params: params
+        ))
+    }
 }
