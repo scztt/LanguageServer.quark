@@ -48,7 +48,7 @@ InitializeProvider : LSPProvider {
             resolveProvider: false,
             completionItem: (
                 labelDetailsSupport: true
-            )
+            ),            
         )
     }
     
@@ -108,7 +108,15 @@ InitializeProvider : LSPProvider {
         
         ^(
             "serverInfo": server.serverInfo,
-            "capabilities": serverCapabilities;
+            "capabilities": serverCapabilities,
+            "sclang": (
+                "version": Main.version,
+                "confPath": LanguageConfig.currentPath() ?? { thisProcess.platform.userConfigDir +/+ "sclang_conf.yaml" },
+                "argv": thisProcess.argv,
+                "includes": LanguageConfig.includePaths(),
+                "excludes": LanguageConfig.excludePaths(),
+                "startupFiles": thisProcess.platform.startupFiles,
+            )
         );
     }
     
