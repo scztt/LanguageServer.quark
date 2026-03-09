@@ -64,6 +64,7 @@
 +Object  {
     *isDefClass { ^false }
         *prGetNames { ^this.all !? _.keys ?? {[]} } // this is valid for MOST def classes....
+        *prAtName { |name| ^this.all.at(name) }
 }
 
 +Ndef {
@@ -76,6 +77,7 @@
                 Set.new
             }
         } // @TODO Search across all servers here?
+        *prAtName { |name| ^Ndef.all[Server.default.name][name] }
 }
 
 +Pdef { *isDefClass { ^true } }

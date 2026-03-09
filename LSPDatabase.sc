@@ -402,12 +402,12 @@ LSPDatabase {
         stream << "## " << class.name;
         class.superclass !? { stream << " : " << class.superclass.name };
         stream << "\n\n";
-
+        
         // Documentation
         if (docStream.collection.size > 0) {
             stream << docStream.collection;
         };
-
+        
         // Source preview
         sourcePreview !? {
             stream << "\n---\n\n";
@@ -416,17 +416,17 @@ LSPDatabase {
         
         ^stream.collection
     }
-
+    
     *methodHoverInfo {
         |methodName, limit=10|
         var methods, stream;
-
+        
         methods = this.methodsForName(methodName.asSymbol);
         if (methods.isNil or: { methods.isEmpty }) { ^nil };
-
+        
         stream = CollStream("");
         stream << "## " << methodName << "\n\n";
-
+        
         methods[0 .. (limit - 1)].do { |method|
             var className = method.ownerClass.name.asString;
             if (method.ownerClass.isMetaClass) {
@@ -436,53 +436,64 @@ LSPDatabase {
             };
             stream << this.methodArgDefaultString(method) << "\n\n";
         };
-
+        
         if (methods.size > limit) {
             stream << "*... and " << (methods.size - limit) << " more implementations*\n";
         };
-
+        
         ^stream.collection
     }
-
+    
     *envVarHoverInfo {
         |name|
         var sym = name.asSymbol;
         var val = currentEnvironment[sym];
         var stream;
-
+        
         if (val.isNil) { ^nil };
-
+        
         stream = CollStream("");
         stream << "## ~" << name << "\n\n";
         stream << "```supercollider\n" << val.asCompileString << "\n```\n";
-
+        
         ^stream.collection
     }
-
+    
     *defClassHoverInfo {
         |class|
         var names, stream;
-
+        
         if (class.isDefClass.not) { ^nil };
-
+        
         names = class.prGetNames.asArray.sort;
         if (names.isEmpty) { ^nil };
-
+        
         stream = CollStream("");
         stream << "## " << class.name << "\n\n";
         stream << names.size << " registered:\n\n";
-
-        names[0 .. 19].do { |name|
-            stream << "- `\\" << name << "`\n";
+        stream << "```\n";
+        
+        names[0 .. 19].do { 
+            |name|
+            var obj = class.prAtName(name.asSymbol);
+            stream 
+                << ("\\" ++ name ++ " = ").padLeft(24)
+                << (
+                    (obj.tryPerform(\source) ? obj)
+                    .asCompileString.replace("\n", " ")[0..32]
+                )
+                << "\n";
         };
-
+        
+        stream << "```\n";
+        
         if (names.size > 20) {
             stream << "\n*... and " << (names.size - 20) << " more*\n";
         };
-
-        ^stream.collection
+        
+        ^stream.collection.postln
     }
-
+    
     *getReferences {
         |word|
         var references = Class.findAllReferences(word.asSymbol);
@@ -517,15 +528,15 @@ LSPDatabase {
             |ch|
             ch !? { ch.isAlphaNum or: { ch == $_ } or: { ch == $~ } } ?? { false }
         };
-
+        
         Log('LanguageServer.quark').info("Searching line for a word: '%' at %:%", lineString, line, character);
-
+        
         if (not(isWord.(lineString[start])) and: {
             isWord.(lineString[(start - 1).max(0)])
         }) {
             start = start - 1;
         };
-
+        
         while {
             (start >= 0) and: { isWord.(lineString[start]) }
         } {
