@@ -6,10 +6,16 @@
 LSPDatabase {
     classvar allMethodNames, allMethods, allClasses, allMethodsByName, methodLocations;
     classvar classSymbols, methodSymbols, allSymbolObjects, docRegionsCache;
+    classvar <>renderClassHoverFunc, <>renderMethodHoverFunc, <>renderEnvVarHoverFunc;
+    classvar <>methodHoverCount = 10;
     
     *initClass {
         methodLocations = ();
         docRegionsCache = Dictionary();
+        
+        renderClassHoverFunc = { |class| LSPDatabase.prDefaultClassHover(class) };
+        renderMethodHoverFunc = { |methodName| LSPDatabase.prDefaultMethodHover(methodName) };
+        renderEnvVarHoverFunc = { |name| LSPDatabase.prDefaultEnvVarHover(name) };
     }
     
     *methodSortFunc {
@@ -363,35 +369,38 @@ LSPDatabase {
     
     *classHoverInfo {
         |class|
-        var stream, sourceLines, sourcePreview,
-            doc, root, descNode, docStream
+        ^renderClassHoverFunc.value(class)
+    }
+    
+    *methodHoverInfo {
+        |methodName|
+        ^renderMethodHoverFunc.value(methodName)
+    }
+    
+    *envVarHoverInfo {
+        |name|
+        ^renderEnvVarHoverFunc.value(name)
+    }
+    
+    *prDefaultClassHover {
+        |class|
+        var stream, doc, root, descStream
             ;
         
-        // Read first 10 lines of class source
-        try {
-            var file = File(class.filenameSymbol.asString, "r");
-            var fileSource = file.readAllString;
-            var lineChar = fileSource.charToLineChar(class.charPos);
-            var startLine = lineChar[0];
-            
-            file.close;
-            
-            sourceLines = fileSource.split($\n);
-            sourceLines = sourceLines[startLine .. (startLine + 9).min(sourceLines.size - 1)];
-            sourcePreview = sourceLines.join("\n");
-        } {
-            sourcePreview = nil;
+        // Resolve metaclasses to their real class
+        if (class.isMetaClass) {
+            class = class.name.asString.replace("Meta_", "").asSymbol.asClass;
+            class ?? { ^nil };
         };
         
-        // Get SCDoc description
         doc = SCDoc.documents["Classes/" ++ class.name];
-        docStream = CollStream("");
         
         if (doc.notNil) {
             try {
                 root = doc.fullPath !? { SCDoc.parseFileFull(doc.fullPath) };
                 root !? {
-                    SCDocMarkdownRenderer.renderSection(docStream, doc, root, \DESCRIPTION);
+                    descStream = CollStream("");
+                    SCDocMarkdownRenderer.renderSection(descStream, doc, root, \DESCRIPTION);
                 };
             } { };
         };
@@ -399,71 +408,224 @@ LSPDatabase {
         stream = CollStream("");
         
         // Header
-        stream << "## " << class.name;
+        stream << "**" << class.name;
         class.superclass !? { stream << " : " << class.superclass.name };
-        stream << "\n\n";
+        stream << "** <sup>ᴄʟᴀꜱꜱ</sup>\n\n---\n\n";
         
-        // Documentation
-        if (docStream.collection.size > 0) {
-            stream << docStream.collection;
+        // Description or fallback
+        if (descStream.notNil and: { descStream.collection.size > 0 }) {
+            stream << descStream.collection;
+        } {
+            // Fallback: class hierarchy + method list
+            {
+                var allMethods = (class.class.methods ?? []) ++ (class.methods ?? []);
+                var sorted = allMethods.sort { |a, b| a.name < b.name };
+                var classMethods = sorted.select { |m| m.ownerClass.isMetaClass };
+                var instanceMethods = sorted.reject { |m| m.ownerClass.isMetaClass };
+                
+                stream << "```supercollider\n";
+                if (classMethods.notEmpty) {
+                    classMethods.do { |m|
+                        stream << "*" << m.name << this.methodArgDefaultString(m) << "\n";
+                    };
+                };
+                if (instanceMethods.notEmpty) {
+                    if (classMethods.notEmpty) { stream << "\n" };
+                    instanceMethods.do { |m|
+                        stream << m.name << this.methodArgDefaultString(m) << "\n";
+                    };
+                };
+                stream << "```\n";
+            }.value;
         };
         
-        // Source preview
-        sourcePreview !? {
-            stream << "\n---\n\n";
-            stream << "```supercollider\n" << sourcePreview << "\n```\n";
+        // Per-class hover content (method help etc.)
+        class.prClassHoverInfo !? { |extra|
+            stream << "\n---\n\n" << extra;
         };
         
         ^stream.collection
     }
     
-    *methodHoverInfo {
-        |methodName, limit=10|
-        var methods, stream;
+    *renderMethodHelp {
+        |class ...methodNames|
+        var doc, root, stream, rendered
+            ;
         
+        doc = SCDoc.documents["Classes/" ++ class.name];
+        doc ?? { ^nil };
+        
+        try {
+            root = doc.fullPath !? { SCDoc.parseFileFull(doc.fullPath) };
+        } { };
+        root ?? { ^nil };
+        
+        stream = CollStream("");
+        rendered = IdentitySet();
+        
+        methodNames.do { |methodName|
+            var result = this.prFindMethodNode(doc, root, methodName.asString);
+            result !? { |r|
+                var node = r[0], secId = r[1];
+                if (rendered.includes(node).not) {
+                    rendered.add(node);
+                    SCDocMarkdownRenderer.renderSection(CollStream(""), doc, root, secId);
+                    if (rendered.size > 1) { stream << "\n---\n\n" };
+                    SCDocMarkdownRenderer.renderSubTree(stream, node);
+                };
+            };
+        };
+        
+        if (stream.collection.size > 0) {
+            ^stream.collection
+        };
+        
+        ^nil
+    }
+    
+    *prDefaultMethodHover {
+        |methodName|
+        var methods, stream, limit;
+        
+        limit = methodHoverCount;
         methods = this.methodsForName(methodName.asSymbol);
         if (methods.isNil or: { methods.isEmpty }) { ^nil };
         
         stream = CollStream("");
-        stream << "## " << methodName << "\n\n";
+        stream << "**" << methodName << "** <sup>ᴍᴇᴛʜᴏᴅ</sup>\n\n---\n\n";
         
         methods[0 .. (limit - 1)].do { |method|
-            var className = method.ownerClass.name.asString;
+            var className, summary
+                ;
+            
+            className = method.ownerClass.name.asString;
+            
+            // Signature line
+            stream << "`";
             if (method.ownerClass.isMetaClass) {
                 stream << className.replace("Meta_", "") << ":\\*" << method.name;
             } {
                 stream << className << ":" << method.name;
             };
-            stream << this.methodArgDefaultString(method) << "\n\n";
+            stream << this.methodArgDefaultString(method);
+            stream << "`";
+            
+            // First prose line from help if available
+            summary = this.prMethodSummaryLine(method);
+            summary !? { stream << " — " << summary };
+            
+            stream << "\n\n";
         };
         
         if (methods.size > limit) {
-            stream << "*... and " << (methods.size - limit) << " more implementations*\n";
+            stream << "*... and " << (methods.size - limit) << " more implementations*\n\n";
         };
+        
         
         ^stream.collection
     }
     
-    *envVarHoverInfo {
-        |name|
-        var sym = name.asSymbol;
-        var val = currentEnvironment[sym];
-        var stream;
+    *prMethodSummaryLine {
+        |method|
+        var className, doc, root, result, node, body, prose, textNode
+            ;
         
+        className = method.ownerClass.name.asString.replace("Meta_", "");
+        doc = SCDoc.documents["Classes/" ++ className];
+        doc ?? { ^nil };
+        
+        try {
+            root = doc.fullPath !? { SCDoc.parseFileFull(doc.fullPath) };
+            root ?? { ^nil };
+            
+            result = this.prFindMethodNode(doc, root, method.name.asString);
+            result ?? { ^nil };
+            
+            node = result[0];
+            body = node.children[1]; // METHODBODY
+            prose = body.children.detect { |c| c.id == \PROSE };
+            prose ?? { ^nil };
+            
+            textNode = prose.children.detect { |c| c.id == \TEXT };
+            textNode !? { ^textNode.text };
+        } { };
+        
+        ^nil
+    }
+    
+    *prDefaultEnvVarHover {
+        |name|
+        var sym, val, stream;
+        
+        sym = name.asSymbol;
+        val = currentEnvironment[sym];
         if (val.isNil) { ^nil };
         
         stream = CollStream("");
-        stream << "## ~" << name << "\n\n";
-        stream << "```supercollider\n" << val.asCompileString << "\n```\n";
+        stream << "**~" << name << "** <sup>ᴇɴᴠ ᴠᴀʀ</sup>\n\n---\n\n";
+        stream << "```supercollider\n" << val.asCompileString << "\n```\n\n";
         
         ^stream.collection
+    }
+    
+    *prFindMethodNode {
+        |doc, root, methodName|
+        var body, found, foundSecId,
+            methodIds, searchNodes
+            ;
+        
+        body = root.children[1];
+        methodIds = [\CMETHOD, \IMETHOD, \METHOD];
+        
+        searchNodes = { |nodes|
+            nodes.do { |node|
+                if (methodIds.indexOfEqual(node.id).notNil) {
+                    var names = node.children[0].children.collect(_.text);
+                    if (names.indexOfEqual(methodName).notNil) {
+                        found = node;
+                    };
+                } {
+                    if (node.id == \SUBSECTION) {
+                        searchNodes.(node.children);
+                    };
+                };
+            };
+        };
+        
+        [\CLASSMETHODS, \INSTANCEMETHODS].do { |secId|
+            body.children.do { |section|
+                if (section.id == secId) {
+                    searchNodes.(section.children);
+                    if (found.notNil and: { foundSecId.isNil }) {
+                        foundSecId = secId;
+                    };
+                };
+            };
+        };
+        
+        found ?? { ^nil };
+        ^[found, foundSecId]
+    }
+    
+    *prRenderMethodHelp {
+        |doc, root, methodName|
+        var result, stream;
+        
+        result = this.prFindMethodNode(doc, root, methodName);
+        result ?? { ^nil };
+        
+        // Initialize renderer state, then render method node
+        SCDocMarkdownRenderer.renderSection(CollStream(""), doc, root, result[1]);
+        stream = CollStream("");
+        SCDocMarkdownRenderer.renderSubTree(stream, result[0]);
+        ^stream
     }
     
     *defClassHoverInfo {
         |class|
         var names, stream;
         
-        if (class.isDefClass.not) { ^nil };
+        if (class.respondsTo(\isDefClass).not or: { class.isDefClass.not }) { ^nil };
         
         names = class.prGetNames.asArray.sort;
         if (names.isEmpty) { ^nil };
@@ -805,6 +967,14 @@ LSPDatabase {
         
         ^[line, char - lineStartChar]
     }
+}
+
++Object {
+    *prClassHoverInfo { ^LSPDatabase.renderMethodHelp(this, \new) }
+}
+
++UGen {
+    *prClassHoverInfo { ^LSPDatabase.renderMethodHelp(this, \ar, \kr) }
 }
 
 +Method {
