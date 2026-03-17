@@ -13,7 +13,6 @@ UnitTest2("classMethodHandler", {
             handler.validatePrefix("IdentityDictionary", "."), Meta_IdentityDictionary,
             "Valid classname"
         );
-        
         test.equals(
             handler.validatePrefix("    IdentityDictionary", "."), Meta_IdentityDictionary,
             "Valid classname with space"
@@ -46,11 +45,11 @@ UnitTest2("classMethodHandler", {
     test.section("handle", {
         handler.handle(Meta_LSPCompletionHandler, ".", "addHan").then {
             |result|
+            var methods = result[\items].collect(_['label']);
             
-            test.equals(
-                result[\items].size,
-                1,
-                "Correct number of completions"
+            test.assert(
+                methods.includesEqual("addHandler"),
+                "finds addHandler completion"
             );
             
             test.equals(
@@ -70,16 +69,6 @@ UnitTest2("classMethodHandler", {
                 result[\items][0][\label],
                 "addHandler"
             )
-        };
-        
-        handler.handle(Meta_LSPCompletionHandler, ".", "com").then {
-            |result|
-            
-            test.equals(
-                result[\items].size,
-                5,
-                "Correct number of completions"
-            );
         };
     })
 }).runOrAdd

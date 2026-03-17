@@ -46,7 +46,6 @@ UnitTest2("environmentVariableHandler", {
                 3,
                 "Correct number of completions"
             );
-            
             test.equals(
                 result[\items][1][\filterText],
                 "variable1"
