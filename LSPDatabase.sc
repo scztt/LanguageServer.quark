@@ -716,77 +716,99 @@ LSPDatabase {
     *getDocumentRegions {
         |doc|
         var cached = docRegionsCache[doc.path];
-        // @TODO Parse properly to account for e.g. comments...
+        // Heuristic scan, not a real parse — see Test/LSP-regions-test.scd for covered cases.
         var lines = doc.string.split($\n);
-        var startRe = "^\\(\\s*(//)?\\s*(.*)\\s*$", endRe = "^\\)\\s*\\;?\\s*(//.*)?$";
-        var regionStack=[], nameStack=[], regions=[], region;
+        // A region starts with "(" at column 0, followed only by whitespace and/or an
+        // optional comment (whose text becomes the region name). Code after "(" is not a region.
+        var startRe = "^\\(\\s*(?:|//\\s*(.*?)|/\\*\\s*(.*?)\\s*\\*/)\\s*$";
+        var regionStack=[], nameStack=[], regions=[];
         var regionDepth = 0;
         var inString = false;
         var inSymbol = false;
-        var inComment = false;
+        var commentDepth = 0;
         var inLineComment = false;
-        
+        var escaped = false;
+
         if (cached.notNil) {
             if (cached[\version] == doc.version) {
                 ^cached[\value]
             }
         };
-        
+
         lines.do {
             |line, lineNum|
-            var start;
+            var start, name;
             var lastCharacter;
-            
-            if ((start = line.findRegexp(startRe)).notEmpty) {
+
+            if (inString.not && (commentDepth == 0)
+                and: { (start = line.findRegexp(startRe)).notEmpty }) {
+
                 regionStack = regionStack.add((
                     start: (line: lineNum, character: 0, depth: regionDepth)
                 ));
-                // "starting region at %:% depth %".format(lineNum, 0, regionDepth).postln;
-                
-                if (start[2][1].size > 0) {
-                    nameStack = nameStack.add(start[2][1]);                                    
+
+                name = if (start[1][1].size > 0) { start[1][1] } { start[2][1] };
+                if (name.size > 0) {
+                    nameStack = nameStack.add(name);
                 } {
-                    nameStack = nameStack.add("[block %]".format(regions.size + nameStack.size));                                    
+                    nameStack = nameStack.add("[block %]".format(regions.size + nameStack.size));
                 }
             };
-            
-            if (regionStack.size > 0) {
-                line.do {
-                    |character, i|
-                    if (character == $") {
-                        inString = inString.not;
+
+            line.do {
+                |character, i|
+                var consumed = false;
+
+                case
+                { escaped } {
+                    escaped = false;
+                }
+                { inLineComment } {
+                    // rest of line is a comment
+                }
+                { commentDepth > 0 } {
+                    if ((character == $*) && (lastCharacter == $/)) {
+                        commentDepth = commentDepth + 1;
+                        consumed = true;
                     };
-                    
-                    if (character == $') {
-                        inSymbol = inSymbol.not;
+                    if ((character == $/) && (lastCharacter == $*)) {
+                        commentDepth = commentDepth - 1;
+                        consumed = true;
                     };
-                    
-                    if (inString.not && inSymbol.not && (character == $/) && (lastCharacter == $/)) {
-                        // "line % char %, inLineComment".format(lineNum, i).postln;
+                }
+                { inString } {
+                    if (character == $\\) { escaped = true };
+                    if (character == $") { inString = false };
+                }
+                { inSymbol } {
+                    if (character == $\\) { escaped = true };
+                    if (character == $') { inSymbol = false };
+                }
+                { lastCharacter == $$ } {
+                    // character literal like $( $) $" — skip it
+                    consumed = true;
+                }
+                {
+                    if ((character == $/) && (lastCharacter == $/)) {
                         inLineComment = true;
                     };
-                    
-                    if (inString.not && inSymbol.not && (character == $*) && (lastCharacter == $/)) {
-                        inComment = true;
+                    if ((character == $*) && (lastCharacter == $/)) {
+                        commentDepth = 1;
+                        consumed = true;
                     };
-                    
-                    if (inString.not && inSymbol.not && (character == $/) && (lastCharacter == $*)) {
-                        inComment = false;
-                    };
-                    
-                    if (inSymbol.not && inString.not && inLineComment.not && inComment.not) {
+                    if (character == $") { inString = true };
+                    if (character == $') { inSymbol = true };
+
+                    if (inLineComment.not && (commentDepth == 0)) {
                         if (character == $() {
                             regionDepth = regionDepth + 1;
-                            // "line %, regionDepth: %".format(lineNum, regionDepth).postln;
                         };
-                        
+
                         if (character == $)) {
                             regionDepth = regionDepth - 1;
-                            // "line %, regionDepth: %".format(lineNum, regionDepth).postln;
                         };
-                        
-                        if (regionStack.isEmpty.not and:{ regionStack.last[\start][\depth] == regionDepth }) {   
-                            // "end region at %:% depth %".format(lineNum, i, regionDepth).postln;
+
+                        if (regionStack.isEmpty.not and:{ regionStack.last[\start][\depth] == regionDepth }) {
                             regionStack.last.put(
                                 \end,
                                 (line: lineNum, character: i + 1)
@@ -797,19 +819,21 @@ LSPDatabase {
                             ));
                         }
                     };
-                    
-                    lastCharacter = character;
                 };
-                
-                inLineComment = false;
+
+                lastCharacter = if (consumed) { nil } { character };
             };
+
+            inLineComment = false;
+            inSymbol = false;   // quoted symbols cannot span lines
+            escaped = false;    // an escaped newline never escapes the next line's first char
         };
-        
+
         docRegionsCache[doc.path] = (
             version: doc.version,
             value: regions
         );
-        
+
         ^regions
     }
     
