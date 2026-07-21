@@ -58,7 +58,7 @@ SCDocMarkdownRenderer {
                     if(File.exists(SCDoc.helpTargetDir +/+ linkBase).not) {
                         "SCDocMarkdown: In %\n"
                             "  Broken link: '%'"
-                            .format(currDoc.fullPath, originalLink).warn;
+                            .format(currDoc !? _.fullPath ? "(unknown)", originalLink).warn;
                     };
                 };
             };
