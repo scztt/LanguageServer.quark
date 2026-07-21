@@ -84,18 +84,12 @@ InitializeProvider : LSPProvider {
             }
         };
         
-        initializationOptions["useGlobalStartupFile"] ?? {"true"} !? {
-            |bool|
-            if (bool == "true") {
+        if (this.prAsBoolOption(initializationOptions["useGlobalStartupFile"], true)) {
                 startupPaths = startupPaths.add(thisProcess.platform.userConfigDir);
-            }
         };
         
-        initializationOptions["useWorkspaceStartupFile"] ?? {"false"} !? {
-            |bool|
-            if (bool == "true") {
+        if (this.prAsBoolOption(initializationOptions["useWorkspaceStartupFile"], false)) {
                 startupPaths = startupPaths.addAll(server.workspaceFolders);
-            }
         };
         
         this.class.startupFiles = startupPaths.collect { |p| p +/+ "startup.scd" };
@@ -155,6 +149,13 @@ InitializeProvider : LSPProvider {
         }
     }
     
+    prAsBoolOption {
+        |value, default|
+        if (value.isNil) { ^default };
+        if (value.isKindOf(Boolean)) { ^value };
+        ^(value.asString == "true")
+    }
+
     getClientCapability {
         |clientCapabilities, path|
         Log('LanguageServer.quark').info("Checking for client capability at % (clientCapabilities: %)", path, clientCapabilities);
