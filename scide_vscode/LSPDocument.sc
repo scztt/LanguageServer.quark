@@ -26,7 +26,6 @@ LSPDocument : Document {
     
     // derived properties
     var string, <isOpen = false;
-    var <envir, <savedEnvir;
     var <editable = true, <promptToSave = true;
     
     *initClass{
