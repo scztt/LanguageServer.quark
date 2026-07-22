@@ -1,9 +1,12 @@
 // https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_implementation
 EvaluateProvider : LSPProvider {
-    classvar 
-        <>resultStringLimit = 2000, 
+    classvar
+        <>resultStringLimit = 2000,
         <>sourceCodeLineLimit=6,
-        <>skipErrorConstructors=true;
+        <>skipErrorConstructors=true,
+        <>evaluateEnvironment,
+        <>documentEnvironment;
+    
     var resultPrefix="> ";
     var guestUserPrefix="[%|> ";
     var postResult=true, improvedErrorReports=false;
@@ -63,6 +66,17 @@ EvaluateProvider : LSPProvider {
             deferredResult.value = (compileError: "Compile error?");
         } {
             thisProcess.nowExecutingPath = document.path;
+            Document.current = document;
+            
+            // A document's linked environment (via e.g. Environment:linkDoc)
+            // takes precedence. Otherwise, evaluate in the persisted shared
+            // environment, so changes like ProxySpace.push carry over to
+            // later evaluations.
+            documentEnvironment = document.envir;
+            savedEnvironment = currentEnvironment;
+            currentEnvironment = documentEnvironment ?? {
+                this.class.evaluateEnvironment ?? { currentEnvironment ?? { topEnvironment } }
+            };
             
             try {
                 result = this.doEvaluate(function);
@@ -95,7 +109,16 @@ EvaluateProvider : LSPProvider {
                 deferredResult.value = (error: error.errorString);
             };
             
-            thisProcess.nowExecutingPath = nil;             
+            // Keep environment changes made by the evaluated code (e.g.
+            // ProxySpace.push / .pop) for later evaluations. Evaluations in a
+            // doc-linked environment have use-semantics: they don't affect
+            // the shared environment.
+            if (documentEnvironment.isNil) {
+                this.class.evaluateEnvironment = currentEnvironment;
+            };
+            currentEnvironment = savedEnvironment;
+            
+            thisProcess.nowExecutingPath = nil;
         };
         
         this.postAfterEvaluate.value.postln;
