@@ -1,9 +1,11 @@
 // https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_implementation
 EvaluateProvider : LSPProvider {
-    classvar 
-        <>resultStringLimit = 2000, 
+    classvar
+        <>resultStringLimit = 2000,
         <>sourceCodeLineLimit=6,
-        <>skipErrorConstructors=true;
+        <>skipErrorConstructors=true,
+        <>evaluateEnvironment;
+    
     var resultPrefix="> ";
     var guestUserPrefix="[%|> ";
     var postResult=true, improvedErrorReports=false;
@@ -46,7 +48,8 @@ EvaluateProvider : LSPProvider {
     
     onReceived {
         |method, params|
-        var source, document, function, guestUser, result, deferredResult;
+        var source, document, function, guestUser, result, deferredResult,
+            documentEnvironment, savedEnvironment;
         
         source = params["sourceCode"];
         guestUser = params["user"];
@@ -63,6 +66,13 @@ EvaluateProvider : LSPProvider {
             deferredResult.value = (compileError: "Compile error?");
         } {
             thisProcess.nowExecutingPath = document.path;
+            Document.current = document;
+            
+            documentEnvironment = document.envir;
+            savedEnvironment = currentEnvironment;
+            currentEnvironment = documentEnvironment ?? {
+                this.class.evaluateEnvironment ?? { currentEnvironment ?? { topEnvironment } }
+            };
             
             try {
                 result = this.doEvaluate(function);
@@ -95,7 +105,12 @@ EvaluateProvider : LSPProvider {
                 deferredResult.value = (error: error.errorString);
             };
             
-            thisProcess.nowExecutingPath = nil;             
+            if (documentEnvironment.isNil) {
+                this.class.evaluateEnvironment = currentEnvironment;
+            };
+            currentEnvironment = savedEnvironment;
+            
+            thisProcess.nowExecutingPath = nil;
         };
         
         this.postAfterEvaluate.value.postln;
