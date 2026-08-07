@@ -60,7 +60,9 @@ ExecuteCommandProvider : LSPProvider {
                 Server.default.stopRecording()
             },
             'supercollider.internal.cmdPeriod': {
-                CmdPeriod.run();
+                LSPConnection.handlerThread.next({
+                    CmdPeriod.run();
+                })
             }
         )
     }
