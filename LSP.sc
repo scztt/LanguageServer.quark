@@ -4,8 +4,7 @@ LSPConnection {
     classvar readyMsg = "***LSP READY***";
     classvar <handlerThread;
     
-    var <>inPort, <>outPort;
-    var socket;
+    var <>transport;
     var messageLengthExpected, messageBuffer;
     var requestId=0;
     var outstandingRequests;
@@ -43,9 +42,7 @@ LSPConnection {
         });
         
         if (settings[\enabled].asBoolean) {
-            {
-                connection = LSPConnection().start;
-            }.defer(0.0001)
+            connection = LSPConnection().start;
         };
         
         Log('LanguageServer.quark').level = \error;
@@ -67,12 +64,14 @@ LSPConnection {
     
     init {
         |settings|
-        inPort = settings[\inPort];
-        outPort = settings[\outPort];
+        var inPort = settings[\inPort];
+        var outPort = settings[\outPort];
         outstandingRequests = ();
         workspaceFolders = List();
         
         Log('LanguageServer.quark').level = settings[\logLevel].asSymbol;
+        
+        this.transport = LSPUDPTransport(inPort, outPort);
         
         this.addDependant({
             |server, message, value|
@@ -87,29 +86,16 @@ LSPConnection {
     }
     
     start {
-        // @TODO: What do we do before start / after stop? Errors?
-        Log('LanguageServer.quark').info("Starting language server, inPort: % outPort:%", inPort, outPort);
+        Routine({
+            this.transport.start(this);
+            
+            // @TODO Is this the only "default" provider we want?
+            this.addProvider(InitializeProvider(this, {}));
+            
+            readyMsg.postln;
+        }).play(AppClock);
         
-        3.do {
-            try {
-                socket = socket ?? { NetAddr("127.0.0.1", outPort) };
-                thisProcess.openUDPPort(inPort, \raw);            
-            } {
-                Log('LanguageServer.quark').warning("Opening LSP port failed. Probably this is because an old scsynth process is holding onto the port. Killing old servers and trying again...");
-                Server.killAll();
-                0.5.wait();
-            };
-        };
-        
-        thisProcess.addRawRecvFunc({
-            |msg, time, replyAddr, recvPort|
-            this.prOnReceived(time, replyAddr, msg);
-        });
-        
-        // @TODO Is this the only "default" provider we want?
-        this.addProvider(InitializeProvider(this, {}));
-        
-        readyMsg.postln;
+        ^this;
     }
     
     stop {
@@ -140,6 +126,11 @@ LSPConnection {
         }
     }
     
+    onReceived {
+        |message|
+        this.prOnReceived(message);
+    }
+    
     request {
         |methodName, params|
         providers[methodName] !? {
@@ -151,10 +142,7 @@ LSPConnection {
     }
     
     prOnReceived {
-        |time, replyAddr, message|
-        
-        Log('LanguageServer.quark').info("Message received: %, %, %", time, replyAddr, message);
-        
+        |message|
         this.prParseMessage(message) !? this.prHandleMessage(_)
     }
     
@@ -347,24 +335,11 @@ LSPConnection {
     
     prSendMessage {
         |dict|
-        var maxSize = 6000;
-        var offset = 0;
-        var packetSize;
         var message = this.prEncodeMessage(dict);
-        var messageSize = message.size;
         
         Log('LanguageServer.quark').info("Responding with: %", message);
         
-        if (message.size < maxSize) {
-            socket.sendRaw(message);
-        } {
-            while { offset < messageSize } {
-                packetSize = min(messageSize, maxSize);
-                socket.sendRaw(message[offset..(offset + packetSize - 1)]);
-                offset = offset + packetSize;
-            }
-        }
-        
+        this.transport.send(message);
     }
 }
 
